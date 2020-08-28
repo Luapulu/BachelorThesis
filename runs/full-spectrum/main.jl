@@ -1,3 +1,1 @@
-using MaGe2SigGen
-
-println("Hello World!")
+include("../../common/common.jl")

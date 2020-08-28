@@ -1,4 +1,5 @@
 name = "BachelorThesis"
-uuid = "3e7b5bd9-e9fd-4c85-9fed-c9a4b702d0db"
 authors = ["Paul Nemec"]
-version = "0.1.0"
+
+[deps]
+SolidStateDetectors = "71e43887-2bd9-5f77-aebd-47f656f0a3f0"
