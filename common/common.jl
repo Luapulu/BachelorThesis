@@ -7,7 +7,7 @@ end
 MaGeHitIter(filepath::AbstractString) = MaGeHitIter([filepath])
 
 function MaGeHitIter(dirpath::AbstractString, filepattern::Regex)
-    MaGeHitIter([file for file in readdir(dirpath) if occursin(filepattern, file)])
+    MaGeHitIter([file for file in readdir(dirpath, join=true) if occursin(filepattern, file)])
 end
 
 function iterate(iter::MaGeHitIter, state)
