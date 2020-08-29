@@ -1,3 +1,5 @@
+import Base: iterate
+
 
 struct MaGeHitIter
     files::AbstractVector{AbstractString}
