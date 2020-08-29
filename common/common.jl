@@ -12,12 +12,12 @@ end
 
 function iterate(iter::MaGeHitIter, state)
     rowvector, fileindex, rowindex = state
-    fileindex > length(iter.files) && return nothing
     if rowindex > length(rowvector)
         rowindex = 1
         fileindex += 1
+        fileindex > length(iter.files) && return nothing
         rowvector = readlines(iter.files[fileindex])
     end
     return rowvector[rowindex], (rowvector, fileindex, rowindex+1)
 end
-iterate(iter::MaGeHitIter) = iterate(iter::MaGeHitIter, (readlines(first(iter.files)), 1, 1))
+iterate(iter::MaGeHitIter) = iterate(iter::MaGeHitIter, (AbstractString[], 0, 1))
