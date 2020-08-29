@@ -20,4 +20,4 @@ function iterate(iter::MaGeHitIter, state)
     end
     return rowvector[rowindex], (rowvector, fileindex, rowindex+1)
 end
-iterate(iter::MaGeHitIter) = iterate(iter, (readlines(first(MaGeHitIter.files)), 1, 1))
+iterate(iter::MaGeHitIter) = iterate(iter::MaGeHitIter, (readlines(first(MaGeHitIter.files)), 1, 1))
