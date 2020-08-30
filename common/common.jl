@@ -53,7 +53,7 @@ function iterate(iter::MaGeEvent, line_iter=eachline(iter.filepath))
     splitline = SubString{String}[]
     while length(splitline) != 9
         next = iterate(line_iter)
-        line, _ = next ? next !== nothing : return nothing
+        line, _ = next !== nothing ? next : return nothing
         splitline = split(line, " ")
     end
     hit = parsehit(splitline)
