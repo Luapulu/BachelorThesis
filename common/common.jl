@@ -1,3 +1,5 @@
+import Base:iterate
+
 struct MaGeHit
     x::Float32
     y::Float32
@@ -9,7 +11,7 @@ struct MaGeHit
     trackparentid::Int32
 end
 
-const MaGeEvent = Vector{MaGeHit}
+const MaGeEventVec = Vector{MaGeHit}
 
 function geteventfiles(dirpath::AbstractString, filepattern::Regex)
     [file for file in readdir(dirpath, join=true) if occursin(filepattern, file)]
@@ -38,10 +40,24 @@ function cleanhitfile(filepath::AbstractString)
     return filter(linearr -> length(linearr) == 9, splitlines)
 end
 
-function parseevent(filepath::AbstractString)::MaGeEvent
+function parse_event(filepath::AbstractString)::MaGeEventVec
     return map(parsehit, cleanhitfile(filepath))
 end
 
-function getenergy(event::MaGeEvent)
-    return sum(hit.E for hit in event)
+struct MaGeEvent
+    filepath::AbstractString
 end
+each_hit(filepath::AbstractString) = MaGeEvent(filepath)
+
+function iterate(iter::MaGeEvent, line_iter=eachline(iter.filepath))
+    splitline = SubString{String}[]
+    while length(splitline) != 9
+        line, line_iter = iterate(line_iter)
+        splitline = split(line, " ")
+    end
+    hit = parsehit(splitline)
+    return hit, line_iter
+end
+
+calcenergy(event::MaGeEventVec) = sum(hit.E for hit in event)
+calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
