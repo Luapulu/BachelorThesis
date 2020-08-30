@@ -13,18 +13,16 @@ function geteventfiles(dirpath::AbstractString, filepattern::Regex)
     [file for file in readdir(dirpath, join=true) if occursin(filepattern, file)]
 end
 
-function parserow(row::AbstractString, xtal_length::Real)
-    stringarr = split(row)
-    length(stringarr) != 9 && return nothing
-
-    x =             parse(Float32, stringarr[3])
-    y =             parse(Float32, stringarr[1])
-    z =             parse(Float32, stringarr[2])
-    E =             parse(Float32, stringarr[4])
-    t =             parse(Float32, stringarr[5])
-    particleid =    parse(Int32, stringarr[6])
-    trackid =       parse(Int32, stringarr[7])
-    trackparentid = parse(Int32, stringarr[8])
+function parsehit(line::String, xtal_length=1)::MaGeHit
+    linearr = split(line, " ")
+    x =             parse(Float32, linearr[3])
+    y =             parse(Float32, linearr[1])
+    z =             parse(Float32, linearr[2])
+    E =             parse(Float32, linearr[4])
+    t =             parse(Float32, linearr[5])
+    particleid =    parse(Int32, linearr[6])
+    trackid =       parse(Int32, linearr[7])
+    trackparentid = parse(Int32, linearr[8])
 
     # convert to detector coordinates [mm]
     x = 10(x + 200)
@@ -34,16 +32,10 @@ function parserow(row::AbstractString, xtal_length::Real)
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
 
-function parseevent(filepath::AbstractString, xtal_length::Real)::Vector{MaGeHit}
-    rowarr = readlines(filepath)
-    hitcount = parse(Int64, split(rowarr[1], " ")[2])
-    hitarr = Vector{MaGeHit}(undef, hitcount)
-    hitindex = 1
-    for row in rowarr
-        hit = parserow(row, xtal_length)
-        hit == nothing && continue
-        hitarr[hitindex] = hit
-        hitindex += 1
-    end
-    return hitarr
+function cleanhitfile(filepath::AbstractString)::Vector{String}
+    return [line for line in eachline(filepath) if length(split(line, " ")) == 9]
+end
+
+function parseevent(filepath::AbstractString)::Vector{MaGeHit}
+    return map(parsehit, cleanhitfile(filepath))
 end
