@@ -39,16 +39,3 @@ end
 function parseevent(filepath::AbstractString)::Vector{MaGeHit}
     return map(parsehit, cleanhitfile(filepath))
 end
-
-function parseevent2(filepath::AbstractString)::Vector{MaGeHit}
-    return [parsehit(line) for line in eachline(filepath) if length(split(line, " ")) == 9]
-end
-
-function parseevent3(filepath::AbstractString)::Vector{MaGeHit}
-    linearr = cleanhitfile(filepath)
-    v = Vector{MaGeHit}(undef, length(linearr))
-    for (i, line) in enumerate(linearr)
-        v[i] = parsehit(line)
-    end
-    return v
-end
