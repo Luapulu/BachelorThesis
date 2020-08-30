@@ -39,3 +39,7 @@ end
 function parseevent(filepath::AbstractString)::Vector{MaGeHit}
     return map(parsehit, cleanhitfile(filepath))
 end
+
+function parseevent2(filepath::AbstractString)::Vector{MaGeHit}
+    return [parsehit(line) for line in eachline(filepath) if length(split(line, " ")) == 9]
+end
