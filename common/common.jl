@@ -1,27 +1,3 @@
-import Base: iterate
-
-
-struct MaGeHitIter
-    files::AbstractVector{AbstractString}
-end
-MaGeHitIter(filepath::AbstractString) = MaGeHitIter([filepath])
-
-function MaGeHitIter(dirpath::AbstractString, filepattern::Regex)
-    MaGeHitIter([file for file in readdir(dirpath, join=true) if occursin(filepattern, file)])
-end
-
-function iterate(iter::MaGeHitIter, state)
-    rowvector, fileindex, rowindex = state
-    if rowindex > length(rowvector)
-        rowindex = 1
-        fileindex += 1
-        fileindex > length(iter.files) && return nothing
-        rowvector = readlines(iter.files[fileindex])
-    end
-    return rowvector[rowindex], (rowvector, fileindex, rowindex+1)
-end
-iterate(iter::MaGeHitIter) = iterate(iter::MaGeHitIter, (AbstractString[], 0, 1))
-
 struct MaGeHit
     x::Float32
     y::Float32
@@ -33,9 +9,13 @@ struct MaGeHit
     trackparentid::Int32
 end
 
-function parserow(row::AbstractString, xtal_length=1)
+function geteventfiles(dirpath::AbstractString, filepattern::Regex)
+    [file for file in readdir(dirpath, join=true) if occursin(filepattern, file)]
+end
+
+function parserow(row::AbstractString, xtal_length::Real)
     stringarr = split(row)
-    length(stringarr) !== 9 && return row
+    length(stringarr) != 9 && return nothing
 
     x =             parse(Float32, stringarr[3])
     y =             parse(Float32, stringarr[1])
@@ -52,4 +32,18 @@ function parserow(row::AbstractString, xtal_length=1)
     z = -10z + 0.5xtal_length
 
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
+end
+
+function parseevent(filepath::AbstractString, xtal_length::Real)::Vector{MaGeHit}
+    rowarr = readlines(filepath)
+    hitcount = split(pop!(rowarr, 1), " ")[2]
+    hitarr = Vector{MaGeHit}(undef, hitcount)
+    hitindex = 1
+    for (rowindex, row) in enumerate(rowarr)
+        hit = parserow(rowarr[i])
+        hit == nothing && continue
+        hitarr[hitindex] = hit
+        hitindex += 1
+    end
+    return hitarr
 end
