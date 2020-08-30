@@ -56,7 +56,7 @@ function iterate(iter::MaGeEvent, line_iter=eachline(iter.filepath))
         splitline = split(line, " ")
     end
     hit = parsehit(splitline)
-    return hit, line_iter
+    return hit, nothing
 end
 
 calcenergy(event::MaGeEventVec) = sum(hit.E for hit in event)
