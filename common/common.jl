@@ -41,7 +41,7 @@ function getparseranges!(range_arr::Vector{UnitRange{Int32}}, line::AbstractStri
     return nothing
 end
 
-function parsehit(ranges::Vector{UnitRange{Int32}}, line::AbstractString)::MaGeHit
+function parsehit(line::AbstractString, ranges::Vector{UnitRange{Int32}})::MaGeHit
     getparseranges!(ranges, line)
     x =             parse(Float32, line[ranges[3]])
     y =             parse(Float32, line[ranges[1]])
@@ -60,14 +60,15 @@ function parsehit(ranges::Vector{UnitRange{Int32}}, line::AbstractString)::MaGeH
 
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
-parsehit(line::AbstractString) = parsehit(Vector{UnitRange{Int32}}(undef, 8), line)
+parsehit(line::AbstractString) = parsehit(line, Vector{UnitRange{Int32}}(undef, 8))
 
 function cleanhitfile(filepath::AbstractString)
     return filter(line -> length(line) > 30, readlines(filepath))
 end
 
 function parse_event(filepath::AbstractString)::MaGeEventVec
-    return map(parsehit, cleanhitfile(filepath))
+    r = Vector{UnitRange{Int32}}(undef, 8)
+    return map(line -> parsehit(line, r), cleanhitfile(filepath))
 end
 
 struct MaGeEvent
@@ -85,11 +86,11 @@ function iterate(iter::MaGeEvent, state)
         next === nothing && return nothing
         line, _ = next
     end
-    return parsehit(range_arr, line), (line_iter, range_arr)
+    return parsehit(line, range_arr), (line_iter, range_arr)
 end
 
 function iterate(iter::MaGeEvent)
-    return iterate(iter, (Vector{UnitRange{Int32}}(undef, 8), eachline(iter.filepath)))
+    return iterate(iter, (eachline(iter.filepath), Vector{UnitRange{Int32}}(undef, 8)))
 end
 
 calcenergy(event::MaGeEventVec) = sum(hit.E for hit in event)
