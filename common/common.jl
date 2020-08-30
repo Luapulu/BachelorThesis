@@ -52,6 +52,7 @@ function parsehit(ranges::Vector{UnitRange{Int32}}, line::AbstractString)
     trackparentid = parse(Int32, line[ranges[8]])
 
     # convert to detector coordinates [mm]
+    xtal_length = 1
     x = 10(x + 200)
     y = 10y
     z = -10z + 0.5xtal_length
