@@ -9,6 +9,8 @@ struct MaGeHit
     trackparentid::Int32
 end
 
+const MaGeEvent = Vector{MaGeHit}
+
 function geteventfiles(dirpath::AbstractString, filepattern::Regex)
     [file for file in readdir(dirpath, join=true) if occursin(filepattern, file)]
 end
@@ -36,6 +38,10 @@ function cleanhitfile(filepath::AbstractString)
     return filter(linearr -> length(linearr) == 9, splitlines)
 end
 
-function parseevent(filepath::AbstractString)::Vector{MaGeHit}
+function parseevent(filepath::AbstractString)::Vector{MaGeHit}::MaGeEvent
     return map(parsehit, cleanhitfile(filepath))
+end
+
+function getenergy(event::MaGeEvent)
+    return sum(hit.E for hit in event)
 end
