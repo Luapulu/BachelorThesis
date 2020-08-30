@@ -30,17 +30,18 @@ function getparseranges(line::AbstractString)
 end
 
 function getparseranges!(range_arr::Vector{UnitRange{Int32}}, line::AbstractString)
+    length(range_arr) != 8 && throw(ArgumentError("range_arr must have length 8"))
     start = 1
     for i in 1:8
         r = findnext(" ", line, start)
         ending, next = prevind(line, first(r)), nextind(line,last(r))
-        range_arr[i] = start:ending
+        @inbounds range_arr[i] = start:ending
         start = next
     end
     return nothing
 end
 
-function parsehit(ranges::Vector{UnitRange{Int32}}, line::AbstractString)
+function parsehit(ranges::Vector{UnitRange{Int32}}, line::AbstractString)::MaGeHit
     getparseranges!(ranges, line)
     x =             parse(Float32, line[ranges[3]])
     y =             parse(Float32, line[ranges[1]])
