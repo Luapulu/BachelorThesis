@@ -1,3 +1,3 @@
 Co-56_MaGeHits:
   dirpath: /mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM
-  pattern: "GWD6022_Co56_side50cm_[0-9]*4.root.hits"
+  pattern: ".root.hits$"
