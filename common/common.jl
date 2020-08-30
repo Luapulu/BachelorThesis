@@ -31,7 +31,7 @@ function parsehit(linearr::Vector{SubString{String}}, xtal_length=1)::MaGeHit
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
 
-function cleanhitfile(filepath::AbstractString)::Vector{String}
+function cleanhitfile(filepath::AbstractString)
     splitlines = map(line -> split(line, " "), readlines(filepath))
     return filter(linearr -> length(linearr) == 9, splitlines)
 end
