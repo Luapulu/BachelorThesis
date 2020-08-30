@@ -41,12 +41,10 @@ function getparseranges(line::AbstractString)
     start = 1
     for i in 1:8
         r = findnext(" ", line, start)
-        r === nothing && break
-        ending, next = first(r), nextind(line,last(r))
+        ending, next = prevind(line, first(r)), nextind(line,last(r))
         ranges[i] = start:ending
         start = next
     end
-    ranges[end] = start:length(line)
     return ranges
 end
 
