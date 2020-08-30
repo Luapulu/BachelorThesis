@@ -38,7 +38,7 @@ function cleanhitfile(filepath::AbstractString)
     return filter(linearr -> length(linearr) == 9, splitlines)
 end
 
-function parseevent(filepath::AbstractString)::Vector{MaGeHit}::MaGeEvent
+function parseevent(filepath::AbstractString)::MaGeEvent
     return map(parsehit, cleanhitfile(filepath))
 end
 
