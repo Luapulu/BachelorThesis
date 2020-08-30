@@ -13,8 +13,7 @@ function geteventfiles(dirpath::AbstractString, filepattern::Regex)
     [file for file in readdir(dirpath, join=true) if occursin(filepattern, file)]
 end
 
-function parsehit(line::String, xtal_length=1)::MaGeHit
-    linearr = split(line, " ")
+function parsehit(linearr::Vector{SubString{String}}, xtal_length=1)::MaGeHit
     x =             parse(Float32, linearr[3])
     y =             parse(Float32, linearr[1])
     z =             parse(Float32, linearr[2])
@@ -33,7 +32,8 @@ function parsehit(line::String, xtal_length=1)::MaGeHit
 end
 
 function cleanhitfile(filepath::AbstractString)::Vector{String}
-    return [line for line in eachline(filepath) if length(split(line, " ")) == 9]
+    splitlines = map(line -> split(line, " "), readlines(filepath))
+    return filter(linearr -> length(linearr) == 9, splitlines)
 end
 
 function parseevent(filepath::AbstractString)::Vector{MaGeHit}
