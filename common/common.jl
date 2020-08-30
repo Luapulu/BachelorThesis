@@ -36,11 +36,11 @@ end
 
 function parseevent(filepath::AbstractString, xtal_length::Real)::Vector{MaGeHit}
     rowarr = readlines(filepath)
-    hitcount = split(pop!(rowarr, 1), " ")[2]
+    hitcount = parse(Int64, split(rowarr[1], " ")[2])
     hitarr = Vector{MaGeHit}(undef, hitcount)
     hitindex = 1
-    for (rowindex, row) in enumerate(rowarr)
-        hit = parserow(rowarr[i])
+    for row in rowarr
+        hit = parserow(row, xtal_length)
         hit == nothing && continue
         hitarr[hitindex] = hit
         hitindex += 1
