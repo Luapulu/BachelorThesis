@@ -1,5 +1,6 @@
 import Pkg
 Pkg.activate(".")
+Pkg.instantiate()
 
 using YAML, MaGe, JLD
 
