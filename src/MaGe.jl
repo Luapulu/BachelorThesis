@@ -15,6 +15,7 @@ struct MaGeFile
     expanding::Bool
 end
 eachevent(filepath) = MaGeFile(filepath, 200, true)
+eachevent(filepath, maxhitcount) = MaGeFile(filepath, maxhitcount, false)
 
 struct MaGeHit
     x::Float32
@@ -32,10 +33,6 @@ struct MaGeEvent <: AbstractVector{MaGeHit}
     eventnum::Int
     hitcount::Int
     primarycount::Int
-    function MaGeEvent(hits, eventnum, hitcount, primarycount)
-        length(hits) != hitcount && throw(ArgumentError("hitcount must equal length of hit array"))
-        return new(hits, eventnum, hitcount, primarycount)
-    end
 end
 size(E::MaGeEvent) = (E.hitcount,)
 getindex(E::MaGeEvent, i::Int) = getindex(E.hits, i)
@@ -50,20 +47,26 @@ ishitline(line::AbstractString) = length(line) > 30
 
 function iterate(iter::MaGeFile, state=(eachline(iter.filepath), Vector{MaGeHit}(undef, iter.maxhitcount)))
     line_iter, hitvec = state
-    metaline, _ = iterate(line_iter)
-    metaline === nothing && return nothing
+
+    next = iterate(line_iter)
+    next === nothing && return nothing
+
+    metaline, _ = next
+    ishitline(metaline) && error("Expected meta line but got \"$metaline\"")
     eventnum, hitcount, primarycount = parsemetaline(metaline)
+
     if iter.expanding && length(hitvec) < hitcount
         hitvec = Vector{MaGeHit}(undef, hitcount)
     end
 
-    for (i, hitline) in enumerate(take(line_iter, hitcount))
+    i = 1
+    for hitline in take(line_iter, hitcount)
         hitvec[i] = parsehit(hitline)
+        i += 1
     end
-
+    i != hitcount && error("hitcount ($hitcount) must equal number of hitlines ($(i)))")
     event = MaGeEvent(hitvec[1:hitcount], eventnum, hitcount, primarycount)
-    new_line_iter = drop(line_iter, hitcount)
-    return event, (new_line_iter, hitvec)
+    return event, (line_iter, hitvec)
 end
 
 function getparseranges(line::AbstractString)
