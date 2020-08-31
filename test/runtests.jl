@@ -1,1 +1,1 @@
-using Test
+using MaGe, Test

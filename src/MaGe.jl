@@ -9,8 +9,6 @@ struct MaGeFile
     maxhitcount::Int32 # Used for preallocation.
 end
 
-const MaGeEventVec = Vector{MaGeHit}
-
 struct MaGeEvent <: AbstractVector{MaGeHit}
     hits::AbstractVector{MaGeHit}
     eventnum::Int32
@@ -93,6 +91,7 @@ function parsehit(line::AbstractString)::MaGeHit
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
 
+"""
 function cleanhitfile(filepath::AbstractString)
     return filter(ishitline, readlines(filepath))
 end
@@ -116,5 +115,6 @@ end
 calcenergy(event::MaGeEventVec) = sum(hit.E for hit in event)
 calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
 calcenergy(filepath::AbstractString) = calcenergy(MaGeEvent(filepath))
+"""
 
 end
