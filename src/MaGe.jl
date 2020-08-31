@@ -1,4 +1,29 @@
+module MaGe
+
 import Base:iterate
+import Base:size, getindex
+using Base.Iterators: take, drop
+
+struct MaGeFile
+    filepath::AbstractString
+    maxhitcount::Int32 # Used for preallocation.
+end
+
+const MaGeEventVec = Vector{MaGeHit}
+
+struct MaGeEvent <: AbstractVector{MaGeHit}
+    hits::AbstractVector{MaGeHit}
+    eventnum::Int32
+    hitcount::Int32
+    primarycount::Int32
+    function MaGeEvent(hits, eventnum, hitcount, primarycount)
+        length(hits) != hitcount && error("hitcount must equal length of hit array")
+        return new(hits, eventnum, hitcount, primarycount)
+    end
+end
+size(E::MaGeEvent) = (E.hitcount,)
+getindex(E::MaGeEvent, i::Int) = getindex(E.hits, i)
+
 
 struct MaGeHit
     x::Float32
@@ -11,11 +36,25 @@ struct MaGeHit
     trackparentid::Int32
 end
 
-const MaGeEventVec = Vector{MaGeHit}
-
 function geteventfiles(dirpath::AbstractString, filepattern::Regex)
     [file for file in readdir(dirpath, join=true) if occursin(filepattern, file)]
 end
+
+getevents(filepath::AbstractString) = MaGeFile(filepath)
+
+function iterate(iter::MaGeFile, state)
+    line_iter, hitvec = state
+    metaline, _ = iterate(line_iter)
+    eventnum, hitcount, primarycount = parsemetaline(metaline)
+    for (i, hitline) in enumerate(take(line_iter, hitcount))
+        hitvec[i] = parsehit(hitline)
+    end
+    event = MaGeEvent(hitvec[1:hitcount], eventnum, hitcount, primarycount)
+    new_line_iter = drop(line_iter, hitcount)
+    return event, (new_line_iter, hitvec)
+end
+
+ishitline(line::AbstractString) = length(line) > 30
 
 function getparseranges(line::AbstractString)
     ranges = Vector{UnitRange{Int32}}(undef, 8)
@@ -29,20 +68,13 @@ function getparseranges(line::AbstractString)
     return ranges
 end
 
-function getparseranges!(range_arr::Vector{UnitRange{Int32}}, line::AbstractString)
-    length(range_arr) != 8 && throw(ArgumentError("range_arr must have length 8"))
-    start = 1
-    for i in 1:8
-        r = findnext(" ", line, start)
-        ending, next = prevind(line, first(r)), nextind(line,last(r))
-        @inbounds range_arr[i] = start:ending
-        start = next
-    end
-    return nothing
+function parsemetaline(line::AbstractString)
+    intparse(str) = parse(Int32, str)
+    return map(intparse, split(line, " ", limit=3))
 end
 
-function parsehit(line::AbstractString, ranges::Vector{UnitRange{Int32}})::MaGeHit
-    getparseranges!(ranges, line)
+function parsehit(line::AbstractString)::MaGeHit
+    ranges = getparseranges(line)
     x =             parse(Float32, line[ranges[3]])
     y =             parse(Float32, line[ranges[1]])
     z =             parse(Float32, line[ranges[2]])
@@ -60,33 +92,21 @@ function parsehit(line::AbstractString, ranges::Vector{UnitRange{Int32}})::MaGeH
 
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
-parsehit(line::AbstractString) = parsehit(line, Vector{UnitRange{Int32}}(undef, 8))
 
 function cleanhitfile(filepath::AbstractString)
-    return filter(line -> length(line) > 30, readlines(filepath))
+    return filter(ishitline, readlines(filepath))
 end
 
-function parse_event(filepath::AbstractString)::MaGeEventVec
-    r = Vector{UnitRange{Int32}}(undef, 8)
-    return map(line -> parsehit(line, r), cleanhitfile(filepath))
-end
-
-struct MaGeEvent
-    filepath::AbstractString
-end
-each_hit(filepath::AbstractString) = MaGeEvent(filepath)
-
-function iterate(iter::MaGeEvent, state)
-    line_iter, range_arr = state
+function iterate(iter::MaGeEvent, line_iter)
     next = iterate(line_iter)
     next === nothing && return nothing
     line, _ = next
-    while length(line) < 30
+    while !ishitline(line)
         next = iterate(line_iter)
         next === nothing && return nothing
         line, _ = next
     end
-    return parsehit(line, range_arr), (line_iter, range_arr)
+    return parsehit(line), line_iter
 end
 
 function iterate(iter::MaGeEvent)
@@ -96,3 +116,5 @@ end
 calcenergy(event::MaGeEventVec) = sum(hit.E for hit in event)
 calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
 calcenergy(filepath::AbstractString) = calcenergy(MaGeEvent(filepath))
+
+end
