@@ -2,4 +2,4 @@
     calcfrequencies(calcenergy, file, 3000, (500, 3500))
 end)
 
-JlD.save("spectrum.jld", "spectrum", result)
+JLD.save("spectrum.jld", "spectrum", result)
