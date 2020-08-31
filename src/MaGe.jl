@@ -123,7 +123,7 @@ function getbin(val, bins::Int, limits::Tuple{T, T}) where T <: Real
         val = upper
     end
     step = (upper - lower) / (bins - 1)
-    return Int64(cld(val - lower, step) + 1)
+    return Int64(fld(val - lower, step) + 1)
 end
 
 function calcfrequencies(func, f::MaGeFile, bins::Int, limits::Tuple{T, T}) where T <: Real
