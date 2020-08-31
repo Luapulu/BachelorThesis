@@ -1,4 +1,7 @@
-@everywhere using YAML, MaGe
+import Pkg
+Pkg.activate(".")
+
+using YAML, MaGe
 
 const CONFIG = YAML.load_file("config.yaml")
 const CO56_MAGE_CONFIG = CONFIG["Co-56_MaGeHits"]
