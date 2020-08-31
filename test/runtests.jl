@@ -19,3 +19,5 @@ const mismatchedfilepath = joinpath(dir, "mismatchedhitcount.root.hits")
 @test calcenergy(testevent) ≈ 846.77106
 
 @test length(eachevent(testfilepath)) == 3
+
+@test collect(eachevent(calcenergy, [testfilepath])) ≈ Float32[846.77106, 2598.5068, 1238.3121]

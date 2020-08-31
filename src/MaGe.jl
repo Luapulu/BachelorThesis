@@ -4,6 +4,7 @@ import Base:iterate
 import Base:size, getindex, show, length
 
 using Base.Iterators: take
+using ThreadTools
 
 export MaGeHit, MaGeEvent, MaGeFile
 export geteventfiles, eachevent, calcenergy
@@ -18,6 +19,9 @@ length(f::MaGeFile) = length(filter(line -> length(line) < 30, readlines(f.filep
 
 eachevent(filepath::AbstractString) = MaGeFile(filepath, 200, true)
 eachevent(filepath::AbstractString, maxhitcount::Int) = MaGeFile(filepath, maxhitcount, false)
+function eachevent(func, filepaths::AbstractArray{String}, n=4)
+    return tmap(func, n, (event for path in filepaths for event in eachevent(path)))
+end
 
 struct MaGeHit
     x::Float32
@@ -109,8 +113,6 @@ function parsehit(line::AbstractString)::MaGeHit
 end
 
 calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
-
-# calcenergyspectrum(filepaths::AbstractArray{AbstractString})
 
 
 """

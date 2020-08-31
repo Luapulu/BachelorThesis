@@ -569,6 +569,11 @@ version = "1.0.5"
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
+[[ThreadTools]]
+git-tree-sha1 = "e335e40d393ccc1e1aa8087632989e856db988e0"
+uuid = "dbf13d8f-d36e-4350-8970-f3a99faba1a8"
+version = "0.2.0"
+
 [[TypedTables]]
 deps = ["SplitApplyCombine", "Tables", "Unicode"]
 git-tree-sha1 = "519533acaccc7d84e214426f69820489e1f46617"
