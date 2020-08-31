@@ -9,6 +9,18 @@ struct MaGeFile
     maxhitcount::Int32 # Used for preallocation.
 end
 
+struct MaGeHit
+    x::Float32
+    y::Float32
+    z::Float32
+    E::Float32
+    t::Float32
+    particleid::Int32
+    trackid::Int32
+    trackparentid::Int32
+end
+
+
 struct MaGeEvent <: AbstractVector{MaGeHit}
     hits::AbstractVector{MaGeHit}
     eventnum::Int32
@@ -21,18 +33,6 @@ struct MaGeEvent <: AbstractVector{MaGeHit}
 end
 size(E::MaGeEvent) = (E.hitcount,)
 getindex(E::MaGeEvent, i::Int) = getindex(E.hits, i)
-
-
-struct MaGeHit
-    x::Float32
-    y::Float32
-    z::Float32
-    E::Float32
-    t::Float32
-    particleid::Int32
-    trackid::Int32
-    trackparentid::Int32
-end
 
 function geteventfiles(dirpath::AbstractString, filepattern::Regex)
     [file for file in readdir(dirpath, join=true) if occursin(filepattern, file)]
