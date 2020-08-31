@@ -17,3 +17,5 @@ const mismatchedfilepath = joinpath(dir, "mismatchedhitcount.root.hits")
 @test_throws ArgumentError iterate(eachevent(mismatchedfilepath))
 
 @test calcenergy(testevent) ≈ 846.77106
+
+@test length(eachevent(testfilepath)) == 3

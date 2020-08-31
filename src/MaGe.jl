@@ -1,7 +1,7 @@
 module MaGe
 
 import Base:iterate
-import Base:size, getindex, show
+import Base:size, getindex, show, length
 
 using Base.Iterators: take
 
@@ -14,8 +14,10 @@ struct MaGeFile
     maxhitcount::Int # Used for preallocation.
     expanding::Bool
 end
-eachevent(filepath) = MaGeFile(filepath, 200, true)
-eachevent(filepath, maxhitcount) = MaGeFile(filepath, maxhitcount, false)
+length(f::MaGeFile) = length(filter(line -> length(line) < 30, readlines(f.filepath)))
+
+eachevent(filepath::AbstractString) = MaGeFile(filepath, 200, true)
+eachevent(filepath::AbstractString, maxhitcount::Int) = MaGeFile(filepath, maxhitcount, false)
 
 struct MaGeHit
     x::Float32
@@ -107,6 +109,9 @@ function parsehit(line::AbstractString)::MaGeHit
 end
 
 calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
+
+# calcenergyspectrum(filepaths::AbstractArray{AbstractString})
+
 
 """
 # convert to detector coordinates [mm]
