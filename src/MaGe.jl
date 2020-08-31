@@ -4,10 +4,10 @@ import Base:iterate
 import Base:size, getindex, show, length
 
 using Base.Iterators: take
-using ThreadTools
+using Distributed
 
 export MaGeHit, MaGeEvent, MaGeFile
-export geteventfiles, eachevent, calcenergy
+export geteventfiles, eachevent, calcenergy, calcfrequencies
 
 
 struct MaGeFile
@@ -17,10 +17,11 @@ struct MaGeFile
 end
 length(f::MaGeFile) = length(filter(line -> length(line) < 30, readlines(f.filepath)))
 
-eachevent(filepath::AbstractString) = MaGeFile(filepath, 200, true)
+eachevent(filepath::AbstractString) = MaGeFile(filepath, 500, true)
 eachevent(filepath::AbstractString, maxhitcount::Int) = MaGeFile(filepath, maxhitcount, false)
-function eachevent(func, filepaths::AbstractArray{String}, n=4)
-    return tmap(func, n, (event for path in filepaths for event in eachevent(path)))
+
+function filemap(func, filepaths::AbstractArray{String})
+    return pmap(func, eachevent(f) for f in filepaths)
 end
 
 struct MaGeHit
@@ -114,6 +115,24 @@ end
 
 calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
 
+function getbin(val, bins::Int, limits::Tuple{T, T}) where T <: Real
+    lower, upper = limits
+    if val < lower
+        val = lower
+    elseif val > upper
+        val = upper
+    end
+    step = (upper - lower) / bins
+    return Int64(cld(val - lower, step))
+end
+
+function calcfrequencies(func, f::MaGeFile, bins::Int, limits::Tuple{T, T}) where T <: Real
+    freq = Vector{Int64}(zeros(bins))
+    for event in f
+        freq[getbin(func(event), bins, limits)] += 1
+    end
+    return freq
+end
 
 """
 # convert to detector coordinates [mm]
