@@ -1,13 +1,20 @@
 module MaGe
 
 import Base:iterate
-import Base:size, getindex
+import Base:size, getindex, show
+
 using Base.Iterators: take, drop
+
+export MaGeHit, MaGeEvent, MaGeFile
+export geteventfiles, eachevent
+
 
 struct MaGeFile
     filepath::AbstractString
-    maxhitcount::Int32 # Used for preallocation.
+    maxhitcount::Int # Used for preallocation.
+    expanding::Bool
 end
+eachevent(filepath) = MaGeFile(filepath, 200, true)
 
 struct MaGeHit
     x::Float32
@@ -20,39 +27,44 @@ struct MaGeHit
     trackparentid::Int32
 end
 
-
 struct MaGeEvent <: AbstractVector{MaGeHit}
     hits::AbstractVector{MaGeHit}
-    eventnum::Int32
-    hitcount::Int32
-    primarycount::Int32
+    eventnum::Int
+    hitcount::Int
+    primarycount::Int
     function MaGeEvent(hits, eventnum, hitcount, primarycount)
-        length(hits) != hitcount && error("hitcount must equal length of hit array")
+        length(hits) != hitcount && throw(ArgumentError("hitcount must equal length of hit array"))
         return new(hits, eventnum, hitcount, primarycount)
     end
 end
 size(E::MaGeEvent) = (E.hitcount,)
 getindex(E::MaGeEvent, i::Int) = getindex(E.hits, i)
+show(io::IO, E::MaGeEvent) = dump(E, maxdepth=1)
+
 
 function geteventfiles(dirpath::AbstractString, filepattern::Regex)
     [file for file in readdir(dirpath, join=true) if occursin(filepattern, file)]
 end
 
-getevents(filepath::AbstractString) = MaGeFile(filepath)
+ishitline(line::AbstractString) = length(line) > 30
 
-function iterate(iter::MaGeFile, state)
+function iterate(iter::MaGeFile, state=(eachline(iter.filepath), Vector{MaGeHit}(undef, iter.maxhitcount)))
     line_iter, hitvec = state
     metaline, _ = iterate(line_iter)
+    metaline === nothing && return nothing
     eventnum, hitcount, primarycount = parsemetaline(metaline)
+    if iter.expanding && length(hitvec) < hitcount
+        hitvec = Vector{MaGeHit}(undef, hitcount)
+    end
+
     for (i, hitline) in enumerate(take(line_iter, hitcount))
         hitvec[i] = parsehit(hitline)
     end
+
     event = MaGeEvent(hitvec[1:hitcount], eventnum, hitcount, primarycount)
     new_line_iter = drop(line_iter, hitcount)
     return event, (new_line_iter, hitvec)
 end
-
-ishitline(line::AbstractString) = length(line) > 30
 
 function getparseranges(line::AbstractString)
     ranges = Vector{UnitRange{Int32}}(undef, 8)
@@ -67,7 +79,7 @@ function getparseranges(line::AbstractString)
 end
 
 function parsemetaline(line::AbstractString)
-    intparse(str) = parse(Int32, str)
+    intparse(str) = parse(Int, str)
     return map(intparse, split(line, " ", limit=3))
 end
 
@@ -81,12 +93,6 @@ function parsehit(line::AbstractString)::MaGeHit
     particleid =    parse(Int32, line[ranges[6]])
     trackid =       parse(Int32, line[ranges[7]])
     trackparentid = parse(Int32, line[ranges[8]])
-
-    # convert to detector coordinates [mm]
-    xtal_length = 1
-    x = 10(x + 200)
-    y = 10y
-    z = -10z + 0.5xtal_length
 
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
@@ -115,6 +121,13 @@ end
 calcenergy(event::MaGeEventVec) = sum(hit.E for hit in event)
 calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
 calcenergy(filepath::AbstractString) = calcenergy(MaGeEvent(filepath))
+
+# convert to detector coordinates [mm]
+xtal_length = 1
+x = 10(x + 200)
+y = 10y
+z = -10z + 0.5xtal_length
+
 """
 
 end
