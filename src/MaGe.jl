@@ -7,7 +7,7 @@ using Base.Iterators: take
 using Distributed
 
 export MaGeHit, MaGeEvent, MaGeFile
-export geteventfiles, eachevent, calcenergy, calcfrequencies
+export geteventfiles, eachevent, filemap, calcenergy, calcfrequencies
 
 
 struct MaGeFile
