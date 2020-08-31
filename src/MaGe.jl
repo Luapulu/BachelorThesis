@@ -3,7 +3,7 @@ module MaGe
 import Base:iterate
 import Base:size, getindex, show
 
-using Base.Iterators: take, drop
+using Base.Iterators: take
 
 export MaGeHit, MaGeEvent, MaGeFile
 export geteventfiles, eachevent
@@ -33,6 +33,12 @@ struct MaGeEvent <: AbstractVector{MaGeHit}
     eventnum::Int
     hitcount::Int
     primarycount::Int
+    function MaGeEvent(hits, eventnum, hitcount, primarycount)
+        if length(hits) != hitcount
+            throw(ArgumentError("hitcount $hitcount must equal number of hits $(length(hits))"))
+        end
+        return new(hits, eventnum, hitcount, primarycount)
+    end
 end
 size(E::MaGeEvent) = (E.hitcount,)
 getindex(E::MaGeEvent, i::Int) = getindex(E.hits, i)
@@ -59,13 +65,13 @@ function iterate(iter::MaGeFile, state=(eachline(iter.filepath), Vector{MaGeHit}
         hitvec = Vector{MaGeHit}(undef, hitcount)
     end
 
-    i = 1
+    i = 0
     for hitline in take(line_iter, hitcount)
-        hitvec[i] = parsehit(hitline)
         i += 1
+        hitvec[i] = parsehit(hitline)
     end
-    i != hitcount && error("hitcount ($hitcount) must equal number of hitlines ($(i)))")
-    event = MaGeEvent(hitvec[1:hitcount], eventnum, hitcount, primarycount)
+
+    event = MaGeEvent(hitvec[1:i], eventnum, hitcount, primarycount)
     return event, (line_iter, hitvec)
 end
 
