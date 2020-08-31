@@ -6,7 +6,7 @@ import Base:size, getindex, show
 using Base.Iterators: take
 
 export MaGeHit, MaGeEvent, MaGeFile
-export geteventfiles, eachevent
+export geteventfiles, eachevent, calcenergy
 
 
 struct MaGeFile
@@ -106,31 +106,9 @@ function parsehit(line::AbstractString)::MaGeHit
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
 
-"""
-function cleanhitfile(filepath::AbstractString)
-    return filter(ishitline, readlines(filepath))
-end
-
-function iterate(iter::MaGeEvent, line_iter)
-    next = iterate(line_iter)
-    next === nothing && return nothing
-    line, _ = next
-    while !ishitline(line)
-        next = iterate(line_iter)
-        next === nothing && return nothing
-        line, _ = next
-    end
-    return parsehit(line), line_iter
-end
-
-function iterate(iter::MaGeEvent)
-    return iterate(iter, (eachline(iter.filepath), Vector{UnitRange{Int32}}(undef, 8)))
-end
-
-calcenergy(event::MaGeEventVec) = sum(hit.E for hit in event)
 calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
-calcenergy(filepath::AbstractString) = calcenergy(MaGeEvent(filepath))
 
+"""
 # convert to detector coordinates [mm]
 xtal_length = 1
 x = 10(x + 200)
