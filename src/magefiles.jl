@@ -1,4 +1,4 @@
-ishitline(line::AbstractString) = length(line) > 30
+ishitline(line::AbstractString) = length(line) > 20 && line[end-8:end] == " physiDet"
 
 struct MaGeFile
     filepath::AbstractString
