@@ -1,16 +1,15 @@
+add_format(format"MAGE", (), ".root.hits")
+
 ishitline(line::AbstractString) = length(line) > 20 && line[end-8:end] == " physiDet"
 
-struct MaGeFile
+struct MaGeRoot
     filepath::AbstractString
     maxhitcount::Int # Used for preallocation.
     expanding::Bool
 end
-length(f::MaGeFile) = length(filter(line -> !ishitline(line), readlines(f.filepath)))
+length(f::MaGeRoot) = length(filter(line -> !ishitline(line), readlines(f.filepath)))
 
-getevents(filepath::AbstractString) = MaGeFile(filepath, 500, true)
-getevents(filepath::AbstractString, maxhitcount::Int) = MaGeFile(filepath, maxhitcount, false)
-
-function iterate(iter::MaGeFile, state=(eachline(iter.filepath), Vector{MaGeHit}(undef, iter.maxhitcount)))
+function iterate(iter::MaGeRoot, state=(eachline(iter.filepath), Vector{MaGeHit}(undef, iter.maxhitcount)))
     line_iter, hitvec = state
 
     next = iterate(line_iter)
@@ -65,6 +64,29 @@ function parsehit(line::AbstractString)::MaGeHit
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
 
+const MaGeJLD = Base.Generator{JLD.JldFile,typeof(FileIO.load)}
+
 function getmagepaths(dirpath::AbstractString, filepattern::Regex)
     [file for file in readdir(dirpath, join=true) if occursin(filepattern, file)]
+end
+getmagepaths(dirpath::AbstractString) = getmagepaths(dirpath, r".root.hits$")
+
+getevents(filepath::AbstractString, maxhitcount::Int) = MaGeRoot(filepath, maxhitcount, false)
+function getevents(filepath::AbstractString)
+    occursin(r".root.hits$", filepath) ? MaGeRoot(filepath, 1000, true) :
+    occursin(r".jld$", filepath) ? (load(filepath, id) for id in names(jldopen(filepath, "r"))) :
+    error("$filepath must end with .root.hits or .jld")
+end
+
+function filemap(func, filepaths::AbstractArray{String}; batch_size=1)
+    return pmap(func, getevents(f) for f in filepaths, batch_size=batch_size)
+end
+
+save(e::MaGeEvent, path::AbstractString; id=string(uuid4())) = save(path, id, e, compress=true)
+
+function copytojld(filepath::AbstractString, resultpath::AbstractString)
+    for event in getevents(filepath)
+        save(event, resultpath)
+    end
+    nothing
 end
