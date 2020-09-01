@@ -23,3 +23,5 @@ const mismatchedfilepath = joinpath(dir, "mismatchedhitcount.root.hits")
 @test map(calcenergy, getevents(testfilepath)) ≈ Float32[846.77106, 2598.5068, 1238.3121]
 
 @test getcounts(calcenergy, getevents(testfilepath), 2, (847, 2000)) == [1, 1, 0, 1]
+
+@test filemap([testfilepath]) do f; getcounts(calcenergy, f, 2, (840, 1240)); end == [[0, 1, 1, 1]]
