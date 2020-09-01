@@ -1,16 +1,16 @@
 module MaGeAnalysis
 
 using Base.Iterators: take
-using Distributed
+using Distributed, FileIO, JLD, UUIDs
 
-import Base: iterate
-import Base: size, getindex, show, length
+import Base: iterate, size, getindex, show, length, ==
+import JLD: save
 
 # Fundamental structs
 export MaGeHit, MaGeEvent
 
-# dealing with files
-export MaGeFile, getmagepaths, getevents
+# working with files
+export MaGeRoot, getmagepaths, getevents, save, copytojld
 
 # Analysing data
 export filemap, calcenergy, getcounts, getbin
@@ -38,9 +38,11 @@ struct MaGeEvent <: AbstractVector{MaGeHit}
         return new(hits, eventnum, hitcount, primarycount)
     end
 end
-size(E::MaGeEvent) = (E.hitcount,)
-getindex(E::MaGeEvent, i::Int) = getindex(E.hits, i)
-show(io::IO, E::MaGeEvent) = dump(E, maxdepth = 1)
+size(e::MaGeEvent) = (e.hitcount,)
+getindex(e::MaGeEvent, i::Int) = getindex(e.hits, i)
+show(io::IO, e::MaGeEvent) = dump(e, maxdepth = 1)
+==(e1::MaGeEvent, e2::MaGeEvent) =
+    e1.primarycount == e2.primarycount && e1.eventnum == e2.eventnum && e1.hits == e2.hits
 
 include("magefiles.jl")
 include("analyse.jl")
