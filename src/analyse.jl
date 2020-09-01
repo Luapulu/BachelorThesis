@@ -9,7 +9,7 @@ function getbin(val, bins::Int, limits::Tuple{T, T}) where T <: Real
     val < lower && return 1
     val > upper && return bins + 2
     step = (upper - lower) / (bins - 1)
-    return Int64(fld(val - lower, step) + 2)
+    return round(Int, (val - lower) / step) + 2
 end
 
 function getcounts(func, f::MaGeFile, bins::Int, limits::Tuple{T, T}) where T <: Real
