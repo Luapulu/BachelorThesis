@@ -4,8 +4,8 @@ dir = joinpath(dirname(pathof(MaGeAnalysis)), "..", "test", "testfiles")
 testfilepath = joinpath(dir, "shortened.root.hits")
 badfilepath = joinpath(dir, "badfile.root.hits")
 
-reader = eachevent(testfilepath)
-testevent = (readevent(reader); readevent(reader))
+file = eachevent(testfilepath)
+testevent = (readevent(file); readevent(file))
 
 
 @testset "Parsing MaGe .root.hits files" begin

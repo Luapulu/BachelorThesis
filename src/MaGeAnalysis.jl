@@ -3,7 +3,7 @@ module MaGeAnalysis
 using Base.Iterators: take
 using Distributed, JLD, UUIDs
 
-import Base: iterate, size, getindex, show, length, close, eltype, IteratorSize, ==
+import Base: iterate, size, getindex, show, length, read, close, eltype, IteratorSize, ==
 import JLD: save
 
 # Fundamental structs

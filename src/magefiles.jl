@@ -1,7 +1,7 @@
 ## General ##
 
-abstract type MaGeReader end
-eltype(::Type{<:MaGeReader}) = MaGeEvent
+abstract type MaGeFile end
+eltype(::Type{<:MaGeFile}) = MaGeEvent
 
 isrootfile(path::AbstractString) = occursin(r".root.hits", path)
 
@@ -46,39 +46,40 @@ function parsemeta(line::AbstractString)
     return map(intparse, split(line, " ", limit=3))
 end
 
-struct RootReader <: MaGeReader
+struct RootFile <: MaGeFile
     stream::IO
     hitvec::Vector{MaGeHit}
 end
-RootReader(io::IO, l::Int=1000) = RootReader(io, Vector{MaGeHit}(undef, l))
-RootReader(f::AbstractString, l::Int=1000) = RootReader(open(f), l)
+RootFile(io::IO, l::Int=1000) = RootFile(io, Vector{MaGeHit}(undef, l))
+RootFile(f::AbstractString, l::Int=1000) = RootFile(open(f), l)
 
-function readevent(reader::RootReader)::MaGeEvent
-    metaline = readline(reader.stream)
+function readevent(file::RootFile)::MaGeEvent
+    metaline = readline(file.stream)
     eventnum, hitcount, primarycount = parsemeta(metaline)
 
     if isnothing(eventnum) || isnothing(eventnum) || isnothing(eventnum)
         error("cannot parse the following as meta line: \"$metaline\"")
     end
 
-    if length(reader.hitvec) < hitcount
-        append!(reader.hitvec, Vector{MaGeHit}(undef, hitcount - length(reader.hitvec)))
+    if length(file.hitvec) < hitcount
+        append!(file.hitvec, Vector{MaGeHit}(undef, hitcount - length(file.hitvec)))
     end
 
     for i in 1:hitcount
-        reader.hitvec[i] = parsehit(readline(reader.stream))
+        file.hitvec[i] = parsehit(readline(file.stream))
     end
 
-    return MaGeEvent(reader.hitvec[1:hitcount], eventnum, hitcount, primarycount)
+    return MaGeEvent(file.hitvec[1:hitcount], eventnum, hitcount, primarycount)
 end
 
-Base.close(reader::RootReader) = close(reader.stream)
+Base.read(file::RootFile) = [event for event in file]
+Base.close(file::RootFile) = close(file.stream)
 
-IteratorSize(::Type{RootReader}) = Base.SizeUnknown()
+IteratorSize(::Type{RootFile}) = Base.SizeUnknown()
 
-function iterate(reader::RootReader, state=nothing)
-    eof(reader.stream) && return (close(reader); nothing)
-    return (readevent(reader), nothing)
+function iterate(file::RootFile, state=nothing)
+    eof(file.stream) && return (close(file); nothing)
+    return (readevent(file), nothing)
 end
 
 ## Parsing and writing .jld files ##
@@ -96,10 +97,10 @@ end
 
 ## Loading events ##
 
-function eachevent(f::AbstractString, reader::MaGeReader, args...; kwargs...)
-    return reader(s, args..., kwargs...)
+function eachevent(f::AbstractString, file::MaGeFile, args...; kwargs...)
+    return file(s, args..., kwargs...)
 end
 function eachevent(f::AbstractString, args...; kwargs...)
-    isrootfile(f) ? RootReader(f, args...; kwargs...) :
+    isrootfile(f) ? RootFile(f, args...; kwargs...) :
     error("$f is not a valid filepath")
 end
