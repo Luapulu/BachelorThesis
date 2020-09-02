@@ -1,38 +1,3 @@
-add_format(format"MAGE", (), ".root.hits")
-
-ishitline(line::AbstractString) = length(line) > 20 && line[end-8:end] == " physiDet"
-
-struct MaGeRoot
-    filepath::AbstractString
-    maxhitcount::Int # Used for preallocation.
-    expanding::Bool
-end
-length(f::MaGeRoot) = length(filter(line -> !ishitline(line), readlines(f.filepath)))
-
-function iterate(iter::MaGeRoot, state=(eachline(iter.filepath), Vector{MaGeHit}(undef, iter.maxhitcount)))
-    line_iter, hitvec = state
-
-    next = iterate(line_iter)
-    next === nothing && return nothing
-
-    metaline, _ = next
-    ishitline(metaline) && error("Expected meta line but got \"$metaline\"")
-    eventnum, hitcount, primarycount = parsemetaline(metaline)
-
-    if iter.expanding && length(hitvec) < hitcount
-        hitvec = Vector{MaGeHit}(undef, hitcount)
-    end
-
-    i = 0
-    for hitline in take(line_iter, hitcount)
-        i += 1
-        hitvec[i] = parsehit(hitline)
-    end
-
-    event = MaGeEvent(hitvec[1:i], eventnum, hitcount, primarycount)
-    return event, (line_iter, hitvec)
-end
-
 function getparseranges(line::AbstractString)
     ranges = Vector{UnitRange{Int32}}(undef, 8)
     start = 1
@@ -45,12 +10,10 @@ function getparseranges(line::AbstractString)
     return ranges
 end
 
-function parsemetaline(line::AbstractString)
-    intparse(str) = parse(Int, str)
-    return map(intparse, split(line, " ", limit=3))
-end
+ishitline(line::AbstractString) = length(line) > 20 && line[end-8:end] == " physiDet"
 
 function parsehit(line::AbstractString)::MaGeHit
+    !ishitline(line) && error("cannot parse the following as hit: \"$line\"")
     ranges = getparseranges(line)
     x =             parse(Float32, line[ranges[3]])
     y =             parse(Float32, line[ranges[1]])
@@ -64,22 +27,65 @@ function parsehit(line::AbstractString)::MaGeHit
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
 
-const MaGeJLD = Base.Generator{JLD.JldFile,typeof(FileIO.load)}
-
-function getmagepaths(dirpath::AbstractString, filepattern::Regex)
-    [file for file in readdir(dirpath, join=true) if occursin(filepattern, file)]
-end
-getmagepaths(dirpath::AbstractString) = getmagepaths(dirpath, r".root.hits$")
-
-getevents(filepath::AbstractString, maxhitcount::Int) = MaGeRoot(filepath, maxhitcount, false)
-function getevents(filepath::AbstractString)
-    occursin(r".root.hits$", filepath) ? MaGeRoot(filepath, 1000, true) :
-    occursin(r".jld$", filepath) ? (load(filepath, id) for id in names(jldopen(filepath, "r"))) :
-    error("$filepath must end with .root.hits or .jld")
+function parsemeta(line::AbstractString)
+    intparse(str) = tryparse(Int, str)
+    return map(intparse, split(line, " ", limit=3))
 end
 
-function filemap(func, filepaths::AbstractArray{String}; batch_size=1)
-    return pmap(func, getevents(f) for f in filepaths, batch_size=batch_size)
+isrootfile(path::AbstractString) = occursin(r".root.hits", path)
+
+abstract type MaGeReader end
+eltype(::Type{<:MaGeReader}) = MaGeEvent
+
+struct RootReader <: MaGeReader
+    stream::IO
+    hitvec::Vector{MaGeHit}
+end
+RootReader(io::IO, l::Int=1000) = RootReader(io, Vector{MaGeHit}(undef, l))
+RootReader(f::AbstractString, l::Int=1000) = RootReader(open(f), l)
+
+function Base.read(reader::RootReader)::MaGeEvent
+    metaline = readline(reader.stream)
+    eventnum, hitcount, primarycount = parsemeta(metaline)
+
+    if isnothing(eventnum) || isnothing(eventnum) || isnothing(eventnum)
+        error("cannot parse the following as meta line: \"$metaline\"")
+    end
+
+    if length(reader.hitvec) < hitcount
+        append!(reader.hitvec, Vector{MaGeHit}(undef, hitcount - length(reader.hitvec)))
+    end
+
+    for i in 1:hitcount
+        reader.hitvec[i] = parsehit(readline(reader.stream))
+    end
+
+    return MaGeEvent(reader.hitvec[1:hitcount], eventnum, hitcount, primarycount)
+end
+
+Base.close(reader::RootReader) = close(reader.stream)
+
+IteratorSize(::Type{RootReader}) = Base.SizeUnknown()
+
+function iterate(reader::RootReader, state=nothing)
+    eof(reader.stream) && return (close(reader); nothing)
+    return (read(reader), nothing)
+end
+
+function eachevent(f::AbstractString, reader::MaGeReader, args...; kwargs...)
+    return reader(s, args..., kwargs...)
+end
+function eachevent(f::AbstractString, args...; kwargs...)
+    isrootfile(f) ? RootReader(f, args...; kwargs...) :
+    error("$f is not a valid filepath")
+end
+
+function magerootpaths(dirpath::AbstractString)
+    [file for file in readdir(dirpath, join=true) if isrootfile(file)]
+end
+
+function filemap(func, filepaths::AbstractArray{<:AbstractString}; batch_size=1)
+    return pmap(func, filepaths, batch_size=batch_size)
 end
 
 save(e::MaGeEvent, path::AbstractString; id=string(uuid4())) = save(path, id, e, compress=true)

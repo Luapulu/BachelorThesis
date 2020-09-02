@@ -8,9 +8,9 @@ function getbin(val, bins::Int, limits::Tuple{T, T}) where T <: Real
     return round(Int, (val - lower) / step) + 2
 end
 
-function getcounts(func, f, bins::Int, limits::Tuple{T, T}) where T <: Real
+function getcounts(func, f::AbstractString, bins::Int, limits::Tuple{T, T}) where T <: Real
     freq = Vector{Int64}(zeros(bins+2))
-    for event in f
+    for event in eachevent(f)
         freq[getbin(func(event), bins, limits)] += 1
     end
     return freq

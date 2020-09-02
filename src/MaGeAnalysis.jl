@@ -1,19 +1,19 @@
 module MaGeAnalysis
 
 using Base.Iterators: take
-using Distributed, FileIO, JLD, UUIDs
+using Distributed, JLD, UUIDs
 
-import Base: iterate, size, getindex, show, length, ==
+import Base: iterate, size, getindex, show, length, read, close, eltype, IteratorSize, ==
 import JLD: save
 
 # Fundamental structs
 export MaGeHit, MaGeEvent
 
 # working with files
-export MaGeRoot, getmagepaths, getevents, save, copytojld
+export magerootpaths, eachevent, filemap
 
 # Analysing data
-export filemap, calcenergy, getcounts, getbin
+export calcenergy, getcounts, getbin
 
 struct MaGeHit
     x::Float32
@@ -39,10 +39,15 @@ struct MaGeEvent <: AbstractVector{MaGeHit}
     end
 end
 size(e::MaGeEvent) = (e.hitcount,)
+eltype(::Type{MaGeEvent}) = MaGeHit
 getindex(e::MaGeEvent, i::Int) = getindex(e.hits, i)
-show(io::IO, e::MaGeEvent) = dump(e, maxdepth = 1)
 ==(e1::MaGeEvent, e2::MaGeEvent) =
     e1.primarycount == e2.primarycount && e1.eventnum == e2.eventnum && e1.hits == e2.hits
+function show(io::IO, e::MaGeEvent)
+    print(io, "MaGeEvent(")
+    print(io, "Array{", eltype(e), "}(", size(e), ")")
+    print(io, ", ", e.eventnum, ", ", e.hitcount, ", ", e.primarycount, ")")
+end
 
 include("magefiles.jl")
 include("analyse.jl")
