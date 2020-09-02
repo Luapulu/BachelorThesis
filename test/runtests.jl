@@ -5,7 +5,7 @@ testfilepath = joinpath(dir, "shortened.root.hits")
 badfilepath = joinpath(dir, "badfile.root.hits")
 
 reader = eachevent(testfilepath)
-testevent = (read(reader); read(reader))
+testevent = (readevent(reader); readevent(reader))
 
 
 @testset "Parsing MaGe .root.hits files" begin
@@ -22,8 +22,8 @@ testevent = (read(reader); read(reader))
       @test testevent[20] == MaGeHit(-196.341, 1.09405, -3.01024, 0.726026, 0.0, 11, 220, 9)
 
       badfilereader = eachevent(badfilepath)
-      @test_throws ErrorException read(badfilereader) # hitcount too large
-      @test_throws ErrorException read(badfilereader) # no meta line there
+      @test_throws ErrorException readevent(badfilereader) # hitcount too large
+      @test_throws ErrorException readevent(badfilereader) # no meta line there
 end
 
 

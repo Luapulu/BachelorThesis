@@ -3,17 +3,17 @@ module MaGeAnalysis
 using Base.Iterators: take
 using Distributed, JLD, UUIDs
 
-import Base: iterate, size, getindex, show, length, read, close, eltype, IteratorSize, ==
+import Base: iterate, size, getindex, show, length, close, eltype, IteratorSize, ==
 import JLD: save
 
 # Fundamental structs
 export MaGeHit, MaGeEvent
 
-# working with files
-export magerootpaths, eachevent, filemap
+# Getting data from files
+export magerootpaths, eachevent, readevent
 
 # Analysing data
-export calcenergy, getcounts, getbin
+export filemap, getcounts, getbin, calcenergy
 
 struct MaGeHit
     x::Float32

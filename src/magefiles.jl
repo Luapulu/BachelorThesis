@@ -53,7 +53,7 @@ end
 RootReader(io::IO, l::Int=1000) = RootReader(io, Vector{MaGeHit}(undef, l))
 RootReader(f::AbstractString, l::Int=1000) = RootReader(open(f), l)
 
-function Base.read(reader::RootReader)::MaGeEvent
+function readevent(reader::RootReader)::MaGeEvent
     metaline = readline(reader.stream)
     eventnum, hitcount, primarycount = parsemeta(metaline)
 
@@ -78,7 +78,20 @@ IteratorSize(::Type{RootReader}) = Base.SizeUnknown()
 
 function iterate(reader::RootReader, state=nothing)
     eof(reader.stream) && return (close(reader); nothing)
-    return (read(reader), nothing)
+    return (readevent(reader), nothing)
+end
+
+## Parsing and writing .jld files ##
+
+function save(e::MaGeEvent, path::AbstractString)
+    save(path, e, compress=true)
+end
+
+function copytojld(filepath::AbstractString, resultpath::AbstractString)
+    for event in getevents(filepath)
+        save(event, resultpath)
+    end
+    nothing
 end
 
 ## Loading events ##
@@ -89,13 +102,4 @@ end
 function eachevent(f::AbstractString, args...; kwargs...)
     isrootfile(f) ? RootReader(f, args...; kwargs...) :
     error("$f is not a valid filepath")
-end
-
-save(e::MaGeEvent, path::AbstractString; id=string(uuid4())) = save(path, id, e, compress=true)
-
-function copytojld(filepath::AbstractString, resultpath::AbstractString)
-    for event in getevents(filepath)
-        save(event, resultpath)
-    end
-    nothing
 end
