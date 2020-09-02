@@ -1,4 +1,6 @@
-calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
+function filemap(func, filepaths::AbstractArray{<:AbstractString}; batch_size=1)
+    return pmap(func, filepaths, batch_size=batch_size)
+end
 
 function getbin(val, bins::Int, limits::Tuple{T, T}) where T <: Real
     lower, upper = limits
@@ -14,4 +16,14 @@ function getcounts(func, f::AbstractString, bins::Int, limits::Tuple{T, T}) wher
         freq[getbin(func(event), bins, limits)] += 1
     end
     return freq
+end
+
+calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
+
+"""Convert to detector coordinates [mm]"""
+function todetectorcoords(x, y, z, xtal_length)
+    x = 10(x + 200)
+    y = 10y
+    z = -10z + 0.5xtal_length
+    return x, y, z
 end

@@ -52,13 +52,4 @@ end
 include("magefiles.jl")
 include("analyse.jl")
 
-"""
-# convert to detector coordinates [mm]
-xtal_length = 1
-x = 10(x + 200)
-y = 10y
-z = -10z + 0.5xtal_length
-
-"""
-
 end # Module
