@@ -1,3 +1,17 @@
+## General ##
+
+abstract type MaGeReader end
+eltype(::Type{<:MaGeReader}) = MaGeEvent
+
+isrootfile(path::AbstractString) = occursin(r".root.hits", path)
+
+"""Get all .root.hits files in a directory"""
+function magerootpaths(dirpath::AbstractString)
+    [file for file in readdir(dirpath, join=true) if isrootfile(file)]
+end
+
+## Parsing MaGe .root.hits files ##
+
 function getparseranges(line::AbstractString)
     ranges = Vector{UnitRange{Int32}}(undef, 8)
     start = 1
@@ -31,11 +45,6 @@ function parsemeta(line::AbstractString)
     intparse(str) = tryparse(Int, str)
     return map(intparse, split(line, " ", limit=3))
 end
-
-isrootfile(path::AbstractString) = occursin(r".root.hits", path)
-
-abstract type MaGeReader end
-eltype(::Type{<:MaGeReader}) = MaGeEvent
 
 struct RootReader <: MaGeReader
     stream::IO
@@ -72,20 +81,14 @@ function iterate(reader::RootReader, state=nothing)
     return (read(reader), nothing)
 end
 
+## Loading events ##
+
 function eachevent(f::AbstractString, reader::MaGeReader, args...; kwargs...)
     return reader(s, args..., kwargs...)
 end
 function eachevent(f::AbstractString, args...; kwargs...)
     isrootfile(f) ? RootReader(f, args...; kwargs...) :
     error("$f is not a valid filepath")
-end
-
-function magerootpaths(dirpath::AbstractString)
-    [file for file in readdir(dirpath, join=true) if isrootfile(file)]
-end
-
-function filemap(func, filepaths::AbstractArray{<:AbstractString}; batch_size=1)
-    return pmap(func, filepaths, batch_size=batch_size)
 end
 
 save(e::MaGeEvent, path::AbstractString; id=string(uuid4())) = save(path, id, e, compress=true)
