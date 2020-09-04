@@ -78,11 +78,18 @@ end
 ## Parsing and writing .jld2 files ##
 
 function savetojld(source::AbstractString, dest::AbstractString)
+    sl = Threads.SpinLock()
     jldopen(dest, "w") do file
         for event in DelimitedFile(source)
-            file[string(hash(event))] = event
+            lock(sl)
+            try
+                file[string(hash(event))] = event
+            finally
+                unlock(sl)
+            end
         end
     end
+    nothing
 end
 
 function savetojld(sources::AbstractVector{<:AbstractString}, dest::AbstractString; batch_size=1)
