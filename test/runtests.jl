@@ -46,12 +46,12 @@ end
       @test map(calcenergy, eachevent(testfilepath)) ≈
             Float32[846.77106, 2598.5068, 1238.3121]
 
-      @test getcounts(calcenergy, testfilepath, 2, (847, 2000)) == [1, 1, 0, 1]
+      @test getcounts(calcenergy, eachevent(testfilepath), 2, (847, 2000)) == [1, 1, 0, 1]
 
-      @test getcounts(calcenergy, jldfilepath, 2, (847, 2000)) == [1, 1, 0, 1]
+      @test getcounts(calcenergy, eachevent(jldfilepath, checkhash=true), 2, (847, 2000)) == [1, 1, 0, 1]
 
       @test filemap([testfilepath]) do f
-            getcounts(calcenergy, f, 2, (840, 1240))
+            getcounts(calcenergy, eachevent(f), 2, (840, 1240))
       end == [[0, 1, 1, 1]]
 end
 

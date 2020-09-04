@@ -10,15 +10,15 @@ function getbin(val, bins::Int, limits::Tuple{T, T}) where T <: Real
     return round(Int, (val - lower) / step) + 2
 end
 
-function getcounts(func, f::AbstractString, bins::Int, limits::Tuple{T, T}) where T <: Real
+function getcounts(func, f::MaGeFile, bins::Int, limits::Tuple{T, T}) where T <: Real
     freq = Vector{Int64}(zeros(bins+2))
-    for event in eachevent(f)
+    for event in f
         freq[getbin(func(event), bins, limits)] += 1
     end
     return freq
 end
 
-calcenergy(event::MaGeEvent) = sum(hit.E for hit in event)
+calcenergy(event::MaGeEvent)::Float32 = sum(hit.E for hit in event)
 
 """Convert to detector coordinates [mm]"""
 function todetectorcoords(x, y, z, xtal_length)
