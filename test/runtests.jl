@@ -3,12 +3,13 @@ using MaGeAnalysis, Test
 dir = joinpath(dirname(pathof(MaGeAnalysis)), "..", "test", "testfiles")
 testfilepath = joinpath(dir, "shortened.root.hits")
 badfilepath = joinpath(dir, "badfile.root.hits")
+jldfilepath = joinpath(dir, "jldtest.jld2")
 
 file = eachevent(testfilepath)
 testevent = (readevent(file); readevent(file))
 
 
-@testset "Parsing MaGe .root.hits files" begin
+@testset "Reading MaGe .root.hits files" begin
 
       @test magerootpaths(dir) == [badfilepath, testfilepath]
 
@@ -27,6 +28,17 @@ testevent = (readevent(file); readevent(file))
 end
 
 
+@testset "Writing and reading .jld2 files" begin
+
+      savetojld(testfilepath, jldfilepath)
+      jldf = eachevent(jldfilepath)
+
+      for (i, delimevent) in enumerate(eachevent(testfilepath))
+            @test jldf[i] == delimevent
+      end
+end
+
+
 @testset "Analysing events" begin
 
       @test calcenergy(testevent) ≈ 2598.5068
@@ -36,19 +48,11 @@ end
 
       @test getcounts(calcenergy, testfilepath, 2, (847, 2000)) == [1, 1, 0, 1]
 
+      @test getcounts(calcenergy, jldfilepath, 2, (847, 2000)) == [1, 1, 0, 1]
+
       @test filemap([testfilepath]) do f
             getcounts(calcenergy, f, 2, (840, 1240))
       end == [[0, 1, 1, 1]]
 end
 
-# jldtestpath = joinpath(dir, "testfile.jld")
-# save(testevent, jldtestpath)
-# @test iterate(getevents(jldtestpath))[1] == testevent
-# rm(jldtestpath)
-#
-# copytojld(testfilepath, jldtestpath)
-# # for event in MaGeAnalysis.jldopen(jldtestpath, "r")
-# #       println(event)
-# # end
-# @test getcounts(calcenergy, getevents(jldtestpath), 2, (840, 1240)) == [0, 1, 1, 1]
-# rm(jldtestpath)
+rm(jldfilepath)

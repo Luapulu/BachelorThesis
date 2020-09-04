@@ -1,16 +1,16 @@
 module MaGeAnalysis
 
 using Base.Iterators: take
-using Distributed, JLD, UUIDs
+using Distributed, JLD2, FileIO
 
-import Base: iterate, size, getindex, show, length, read, close, eltype, IteratorSize, ==
-import JLD: save
+import Base:
+    iterate, size, getindex, hash, show, length, read, close, eltype, IteratorSize, keys, ==
 
 # Fundamental structs
 export MaGeHit, MaGeEvent
 
-# Getting data from files
-export magerootpaths, eachevent, readevent
+# Working with files
+export magerootpaths, eachevent, readevent, savetojld
 
 # Analysing data
 export filemap, getcounts, getbin, calcenergy
@@ -48,6 +48,9 @@ function show(io::IO, e::MaGeEvent)
     print(io, "Array{", eltype(e), "}(", size(e), ")")
     print(io, ", ", e.eventnum, ", ", e.hitcount, ", ", e.primarycount, ")")
 end
+
+show(io::IO, m::MIME"text/plain", e::MaGeEvent) = show(io, e)
+hash(e::MaGeEvent) = hash((e.primarycount, e.eventnum, e.hits))
 
 include("magefiles.jl")
 include("analyse.jl")
