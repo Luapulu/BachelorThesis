@@ -2,8 +2,10 @@ import Pkg
 Pkg.activate(".")
 Pkg.instantiate()
 
-using YAML, MaGeAnalysis, JLD
+using YAML, MaGeAnalysis
 
 const CONFIG = YAML.load_file("config.yaml")
-const CO56_MAGE_CONFIG = CONFIG["Co-56_MaGeHits"]
-const CO56_HIT_FILES = magerootpaths(CO56_MAGE_CONFIG["dirpath"], Regex(CO56_MAGE_CONFIG["pattern"]))
+const CO56_DELIMITED_DIR = CONFIG["Co-56_MaGeHits"]["dirpath"]
+const CO56_JLD_PATH = CONFIG["Co-56_MaGeHits"]["jldpath"]
+
+const CO56_DELIMITED_FILES = magerootpaths(CO56_DELIMITED_DIR)
