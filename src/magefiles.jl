@@ -92,9 +92,10 @@ end
 struct JLD2File <: MaGeFile
     file::JLD2.JLDFile
     keys::AbstractVector{String}
+    checkhash::Bool
 end
-JLD2File(file::JLD2.JLDFile) = JLD2File(file, keys(file))
-JLD2File(path::AbstractString) = JLD2File(jldopen(path))
+JLD2File(file::JLD2.JLDFile; checkhash::Bool=false) = JLD2File(file, keys(file), checkhash)
+JLD2File(path::AbstractString; kwargs...) = JLD2File(jldopen(path); kwargs...)
 keys(f::JLD2File) = f.keys
 getindex(f::JLD2File, name::AbstractString) = getindex(f.file, name)
 getindex(f::JLD2File, i::Int) = getindex(f, keys(f)[i])
@@ -103,7 +104,7 @@ function iterate(file::JLD2File, state=1)
     state > length(file) && return nothing
     k = keys(file)[state]
     e = file[k]
-    string(hash(e)) != k && error("data has been altered or corrupted!")
+    file.checkhash && string(hash(e)) != k && error("data has been altered or corrupted!")
     return e, state + 1
 end
 
