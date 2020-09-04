@@ -1,7 +1,7 @@
 module MaGeAnalysis
 
 using Base.Iterators: take
-using Distributed, JLD2
+using Distributed, JLD
 
 import Base:
     iterate, size, getindex, hash, show, length, read, close, eltype, IteratorSize, keys, ==

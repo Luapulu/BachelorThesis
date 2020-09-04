@@ -34,7 +34,7 @@ end
       jldf = eachevent(jldfilepath)
 
       for (i, delimevent) in enumerate(eachevent(testfilepath))
-            @test jldf[i] == delimevent
+            @test jldf[string(hash(delimevent))] == delimevent
       end
 end
 
