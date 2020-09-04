@@ -96,22 +96,23 @@ function savetojld(sources::AbstractVector{<:AbstractString}, dest::AbstractStri
     pmap(source->savetojld(source, dest), sources, batch_size=batch_size)
 end
 
-struct JldFile <: MaGeFile
-    file::JLD.JldFile
+struct JLD2File <: MaGeFile
+    file::JLD2.JLDFile
     keys::AbstractVector{String}
     checkhash::Bool
 end
-JldFile(file::JLD.JldFile; checkhash::Bool=false) = JldFile(file, names(file), checkhash)
-JldFile(path::AbstractString; kwargs...) = JldFile(jldopen(path); kwargs...)
-keys(f::JldFile) = f.keys
-getindex(f::JldFile, name::AbstractString) = read(getindex(f.file, name))
-getindex(f::JldFile, i::Int) = getindex(f, keys(f)[i])
-length(f::JldFile) = length(keys(f))
-function iterate(file::JldFile, state=1)
+JLD2File(file::JLD2.JLDFile; checkhash::Bool=false) = JLD2File(file, keys(file), checkhash)
+JLD2File(path::AbstractString; kwargs...) = JLD2File(jldopen(path); kwargs...)
+keys(f::JLD2File) = f.keys
+getindex(f::JLD2File, name::AbstractString) = getindex(f.file, name)
+getindex(f::JLD2File, i::Int) = getindex(f, keys(f)[i])
+length(f::JLD2File) = length(keys(f))
+function iterate(file::JLD2File, state=1)
     state > length(file) && return nothing
-    e = file[state]
-    file.checkhash && string(hash(e)) != keys(file)[state] && error("data has been altered or corrupted!")
-    return file[state], state + 1
+    k = keys(file)[state]
+    e = file[k]
+    file.checkhash && string(hash(e)) != k && error("data has been altered or corrupted!")
+    return e, state + 1
 end
 
 ## Convenience ##
@@ -130,6 +131,6 @@ end
 
 function eachevent(f::AbstractString, args...; kwargs...)
     isrootfile(f) ? DelimitedFile(f, args...; kwargs...) :
-    isjld2file(f) ? JldFile(f, args...; kwargs...) :
+    isjld2file(f) ? JLD2File(f, args...; kwargs...) :
     error("$f is not a valid filepath")
 end
