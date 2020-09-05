@@ -72,6 +72,11 @@ end
 
 ## Parsing and writing .jld2 files ##
 
+function makejldpath(roothitpath, destdir)
+    dir, f = splitdir(roothitpath)
+    return joinpath(destdir, splitext(splitext(f)[1])[1] * ".jld2")
+end
+
 function savetojld(source::AbstractString, dest::AbstractString)
     sl = Threads.SpinLock()
     jldopen(dest, "w") do file
@@ -87,8 +92,9 @@ function savetojld(source::AbstractString, dest::AbstractString)
     nothing
 end
 
-function savetojld(sources::AbstractVector{<:AbstractString}, dest::AbstractString; batch_size=1)
-    pmap(source->savetojld(source, dest), sources, batch_size=batch_size)
+function savetojld(sources::AbstractVector{<:AbstractString}, destdir::AbstractString; batch_size=1)
+    save(source) = savetojld(source, makejldpath(source, destdir))
+    pmap(save, sources, batch_size=batch_size)
 end
 
 struct JLD2File <: MaGeFile
@@ -118,6 +124,10 @@ isjld2file(path::AbstractString) = occursin(r".jld2$", path)
 """Get all .root.hits files in a directory"""
 function magerootpaths(dirpath::AbstractString)
     [file for file in readdir(dirpath, join=true) if isrootfile(file)]
+end
+
+function jldpaths(dirpath::AbstractString)
+    [file for file in readdir(dirpath, join=true) if isjld2file(file)]
 end
 
 function eachevent(f::AbstractString, file::MaGeFile, args...; kwargs...)

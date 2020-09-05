@@ -1,9 +1,9 @@
 using MaGeAnalysis, Test
 
-dir = joinpath(dirname(pathof(MaGeAnalysis)), "..", "test", "testfiles")
+dir = realpath(joinpath(dirname(pathof(MaGeAnalysis)), "..", "test", "testfiles"))
 testfilepath = joinpath(dir, "shortened.root.hits")
 badfilepath = joinpath(dir, "badfile.root.hits")
-jldfilepath = joinpath(dir, "jldtest.jld2")
+jldfilepath = joinpath(dir, "shortened.jld2")
 
 file = eachevent(testfilepath)
 testevent = (readevent(file); readevent(file))
@@ -30,7 +30,8 @@ end
 
 @testset "Writing and reading .jld2 files" begin
 
-      savetojld(testfilepath, jldfilepath)
+      savetojld([testfilepath], dir)
+      @test first(jldpaths(dir)) == jldfilepath
       jldf = eachevent(jldfilepath)
 
       for (i, delimevent) in enumerate(eachevent(testfilepath))
