@@ -41,10 +41,8 @@ end
 
 struct DelimitedFile <: MaGeFile
     stream::IO
-    hitvec::Vector{MaGeHit}
 end
-DelimitedFile(io::IO, l::Int=1000) = DelimitedFile(io, Vector{MaGeHit}(undef, l))
-DelimitedFile(f::AbstractString, l::Int=1000) = DelimitedFile(open(f), l)
+DelimitedFile(f::AbstractString) = DelimitedFile(open(f))
 
 function readevent(file::DelimitedFile)::MaGeEvent
     metaline = readline(file.stream)
@@ -54,15 +52,12 @@ function readevent(file::DelimitedFile)::MaGeEvent
         error("cannot parse the following as meta line: \"$metaline\"")
     end
 
-    if length(file.hitvec) < hitcount
-        append!(file.hitvec, Vector{MaGeHit}(undef, hitcount - length(file.hitvec)))
-    end
-
+    hitvec = Vector{MaGeHit}(undef, hitcount)
     for i in 1:hitcount
-        file.hitvec[i] = parsehit(readline(file.stream))
+        hitvec[i] = parsehit(readline(file.stream))
     end
 
-    return MaGeEvent(file.hitvec[1:hitcount], eventnum, hitcount, primarycount)
+    return MaGeEvent(hitvec, eventnum, hitcount, primarycount)
 end
 
 Base.read(file::DelimitedFile) = [event for event in file]

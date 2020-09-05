@@ -16,7 +16,7 @@ testevent = (readevent(file); readevent(file))
       @test MaGeAnalysis.parsehit("-3.7 1.8 -2.1 0.3 0 22 12 9 physiDet") ==
             MaGeHit(-2.1, -3.7, 1.8, 0.3, 0, 22, 12, 9)
 
-      for (i, event) in enumerate(eachevent(testfilepath, 100))
+      for (i, event) in enumerate(eachevent(testfilepath))
             i == 2 && @test event == testevent
       end
 
