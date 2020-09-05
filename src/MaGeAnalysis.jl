@@ -10,7 +10,7 @@ import Base:
 export MaGeHit, MaGeEvent
 
 # Working with files
-export magerootpaths, jldpaths, eachevent, readevent, savetojld
+export magerootpaths, magejldpaths, eachevent, readevent, savetojld
 
 # Analysing data
 export filemap, getcounts, getbin, calcenergy

@@ -1,7 +1,7 @@
 name = "MaGeAnalysis"
 uuid = "c72a0c40-e991-40c1-bf51-d364a8cc9db3"
 authors = ["Paul Nemec"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"

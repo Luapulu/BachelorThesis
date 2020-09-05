@@ -91,9 +91,10 @@ function savetojld(source::AbstractString, dest::AbstractString)
     nothing
 end
 
-function savetojld(sources::AbstractVector{<:AbstractString}, destdir::AbstractString; batch_size=1)
-    save(source) = savetojld(source, makejldpath(source, destdir))
-    pmap(save, sources, batch_size=batch_size)
+function savetojld(sources::AbstractVector{<:AbstractString}, destdir::AbstractString)
+    pmap(sources) do source
+        savetojld(source, makejldpath(source, destdir))
+    end
     nothing
 end
 
@@ -111,6 +112,7 @@ end
 getindex(f::JLD2File, i::Int) = getindex(f.events, i)
 iterate(f::JLD2File) = iterate(f.events)
 iterate(f::JLD2File, state) = iterate(f.events, state)
+length(f::JLD2File) = length(f.events)
 
 ## Convenience ##
 
@@ -122,7 +124,7 @@ function magerootpaths(dirpath::AbstractString)
     [file for file in readdir(dirpath, join=true) if isrootfile(file)]
 end
 
-function jldpaths(dirpath::AbstractString)
+function magejldpaths(dirpath::AbstractString)
     [file for file in readdir(dirpath, join=true) if isjld2file(file)]
 end
 

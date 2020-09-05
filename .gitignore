@@ -1,3 +1,4 @@
 *.jld
+*jld2
 *.svg
 *DS_Store

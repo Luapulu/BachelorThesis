@@ -31,12 +31,10 @@ end
 @testset "Writing and reading .jld2 files" begin
 
       savetojld([testfilepath], dir)
-      @test first(jldpaths(dir)) == jldfilepath
+      @test first(magejldpaths(dir)) == jldfilepath
       jldf = eachevent(jldfilepath)
 
-      for (i, delimevent) in enumerate(eachevent(testfilepath))
-            @test jldf[i] == delimevent
-      end
+      @test Set(jldf) == Set(eachevent(testfilepath))
 end
 
 
