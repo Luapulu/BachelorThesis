@@ -78,15 +78,9 @@ function makejldpath(roothitpath, destdir)
 end
 
 function savetojld(source::AbstractString, dest::AbstractString)
-    sl = Threads.SpinLock()
     jldopen(dest, "w") do file
         for event in DelimitedFile(source)
-            lock(sl)
-            try
-                file[string(hash(event))] = event
-            finally
-                unlock(sl)
-            end
+            file[string(hash(event))] = event
         end
     end
     nothing
