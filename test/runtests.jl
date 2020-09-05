@@ -35,7 +35,7 @@ end
       jldf = eachevent(jldfilepath)
 
       for (i, delimevent) in enumerate(eachevent(testfilepath))
-            @test jldf[string(hash(delimevent))] == delimevent
+            @test jldf[i] == delimevent
       end
 end
 
@@ -49,7 +49,7 @@ end
 
       @test getcounts(calcenergy, eachevent(testfilepath), 2, (847, 2000)) == [1, 1, 0, 1]
 
-      @test getcounts(calcenergy, eachevent(jldfilepath, checkhash=true), 2, (847, 2000)) == [1, 1, 0, 1]
+      @test getcounts(calcenergy, eachevent(jldfilepath), 2, (847, 2000)) == [1, 1, 0, 1]
 
       @test filemap([testfilepath]) do f
             getcounts(calcenergy, eachevent(f), 2, (840, 1240))

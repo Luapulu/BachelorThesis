@@ -72,15 +72,20 @@ end
 
 ## Parsing and writing .jld2 files ##
 
+const JLD_LOCK = ReentrantLock()
+
 function makejldpath(roothitpath, destdir)
     dir, f = splitdir(roothitpath)
     return joinpath(destdir, splitext(splitext(f)[1])[1] * ".jld2")
 end
 
 function savetojld(source::AbstractString, dest::AbstractString)
-    jldopen(dest, "w") do file
-        for event in DelimitedFile(source)
-            file[string(hash(event))] = event
+    events = [event for event in DelimitedFile(source)]
+    lock(JLD_LOCK) do
+        jldopen(dest, "w") do file
+            for event in events
+                file[string(event.eventnum)] = event
+            end
         end
     end
     nothing
@@ -89,26 +94,23 @@ end
 function savetojld(sources::AbstractVector{<:AbstractString}, destdir::AbstractString; batch_size=1)
     save(source) = savetojld(source, makejldpath(source, destdir))
     pmap(save, sources, batch_size=batch_size)
+    nothing
 end
 
 struct JLD2File <: MaGeFile
-    file::JLD2.JLDFile
-    keys::AbstractVector{String}
-    checkhash::Bool
+    events::AbstractVector{MaGeEvent}
+    function JLD2File(path::AbstractString)
+        events = lock(JLD_LOCK) do
+            jldopen(path) do file
+                return [file[k] for k in keys(file)]
+            end
+        end
+        new(events)
+    end
 end
-JLD2File(file::JLD2.JLDFile; checkhash::Bool=false) = JLD2File(file, keys(file), checkhash)
-JLD2File(path::AbstractString; kwargs...) = JLD2File(jldopen(path); kwargs...)
-keys(f::JLD2File) = f.keys
-getindex(f::JLD2File, name::AbstractString) = getindex(f.file, name)
-getindex(f::JLD2File, i::Int) = getindex(f, keys(f)[i])
-length(f::JLD2File) = length(keys(f))
-function iterate(file::JLD2File, state=1)
-    state > length(file) && return nothing
-    k = keys(file)[state]
-    e = file[k]
-    file.checkhash && string(hash(e)) != k && error("data has been altered or corrupted!")
-    return e, state + 1
-end
+getindex(f::JLD2File, i::Int) = getindex(f.events, i)
+iterate(f::JLD2File) = iterate(f.events)
+iterate(f::JLD2File, state) = iterate(f.events, state)
 
 ## Convenience ##
 
