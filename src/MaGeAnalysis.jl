@@ -1,6 +1,7 @@
 module MaGeAnalysis
 
 using Distributed, JLD2, MJDSigGen
+using MJDSigGen: Struct_MJD_Siggen_Setup, signal_calc_init, fieldgen, get_signal!
 
 import Base
 
@@ -10,8 +11,11 @@ export MaGeHit, MaGeEvent
 # Working with files
 export getdelimpaths, readevent, eachevent, getjldpaths, delimtojld, getfile, filemap
 
+# Siggen/fieldgen
+export get_detector_setup
+
 # Analysing data
-export getcounts, getbin, calcenergy
+export calcenergy
 
 struct MaGeHit
     x::Float32
