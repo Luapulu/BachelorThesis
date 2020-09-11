@@ -205,8 +205,8 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[MJDSigGen]]
 deps = ["BinDeps", "DelimitedFiles", "Libdl", "Test"]
-git-tree-sha1 = "4fee1c7fb25dc4e4e655cb2b75ca96d1c85a218e"
-repo-rev = "master"
+git-tree-sha1 = "6b76d718f43ab3c4e49a0a195e68bec246abb415"
+repo-rev = "dev-luapulu"
 repo-url = "https://github.com/Luapulu/MJDSigGen.jl.git"
 uuid = "d3f1610b-2cc8-4877-9c4b-1cc92a82e4fd"
 version = "0.1.0"
