@@ -1,11 +1,13 @@
-## General ##
+## MaGe .root.hits files ##
 
-abstract type MaGeFile end
-eltype(::Type{<:MaGeFile}) = MaGeEvent
+isrootfile(path::AbstractString) = occursin(r".root.hits$", path)
 
-## Parsing MaGe .root.hits files ##
+"""Get all .root.hits paths in a directory"""
+function getdelimpaths(dirpath::AbstractString)
+    [file for file in readdir(dirpath, join=true) if isrootfile(file)]
+end
 
-function getparseranges(line::AbstractString)
+function getparseranges(line::String)
     ranges = Vector{UnitRange{Int32}}(undef, 8)
     start = 1
     for i in 1:8
@@ -17,10 +19,10 @@ function getparseranges(line::AbstractString)
     return ranges
 end
 
-ishitline(line::AbstractString) = length(line) > 20 && line[end-8:end] == " physiDet"
+ishitline(line::String) = length(line) > 20 && line[end-8:end] == " physiDet"
 
-function parsehit(line::AbstractString)::MaGeHit
-    !ishitline(line) && error("cannot parse the following as hit: \"$line\"")
+function parsehit(line::String)::MaGeHit
+    !ishitline(line) && error("cannot parse \"$line\" as hit")
     ranges = getparseranges(line)
     x =             parse(Float32, line[ranges[3]])
     y =             parse(Float32, line[ranges[1]])
@@ -34,17 +36,20 @@ function parsehit(line::AbstractString)::MaGeHit
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
 
-function parsemeta(line::AbstractString)
+function parsemeta(line::String)
     intparse(str) = tryparse(Int, str)
     return map(intparse, split(line, " ", limit=3))
 end
 
-struct DelimitedFile <: MaGeFile
+struct DelimFile
     stream::IO
 end
-DelimitedFile(f::AbstractString) = DelimitedFile(open(f))
+DelimFile(f::AbstractString) = DelimFile(Base.open(f))
 
-function readevent(file::DelimitedFile)::MaGeEvent
+Base.IteratorSize(::Type{DelimFile}) = Base.SizeUnknown()
+Base.eltype(::Type{DelimFile}) = MaGeEvent
+
+function readevent(file::DelimFile)::MaGeEvent
     metaline = readline(file.stream)
     eventnum, hitcount, primarycount = parsemeta(metaline)
 
@@ -60,80 +65,88 @@ function readevent(file::DelimitedFile)::MaGeEvent
     return MaGeEvent(hitvec, eventnum, hitcount, primarycount)
 end
 
-Base.read(file::DelimitedFile) = [event for event in file]
-Base.close(file::DelimitedFile) = close(file.stream)
+Base.close(file::DelimFile) = close(file.stream)
 
-IteratorSize(::Type{DelimitedFile}) = Base.SizeUnknown()
-
-function iterate(file::DelimitedFile, state=nothing)
+function Base.iterate(file::DelimFile, state=nothing)
     eof(file.stream) && return (close(file); nothing)
     return (readevent(file), nothing)
 end
 
-## Parsing and writing .jld2 files ##
+eachevent(file::DelimFile) = file
 
-const JLD_LOCK = ReentrantLock()
+## .jld2 files ##
 
-function makejldpath(roothitpath, destdir)
-    dir, f = splitdir(roothitpath)
-    return joinpath(destdir, splitext(splitext(f)[1])[1] * ".jld2")
-end
-
-function savetojld(source::AbstractString, dest::AbstractString)
-    events = [event for event in DelimitedFile(source)]
-    lock(JLD_LOCK) do
-        jldopen(dest, "w") do file
-            for event in events
-                file[string(event.eventnum)] = event
-            end
-        end
-    end
-    nothing
-end
-
-function savetojld(sources::AbstractVector{<:AbstractString}, destdir::AbstractString)
-    pmap(sources) do source
-        savetojld(source, makejldpath(source, destdir))
-    end
-    nothing
-end
-
-struct JLD2File <: MaGeFile
-    events::AbstractVector{MaGeEvent}
-    function JLD2File(path::AbstractString)
-        events = lock(JLD_LOCK) do
-            jldopen(path) do file
-                return [file[k] for k in keys(file)]
-            end
-        end
-        new(events)
-    end
-end
-getindex(f::JLD2File, i::Int) = getindex(f.events, i)
-iterate(f::JLD2File) = iterate(f.events)
-iterate(f::JLD2File, state) = iterate(f.events, state)
-length(f::JLD2File) = length(f.events)
-
-## Convenience ##
-
-isrootfile(path::AbstractString) = occursin(r".root.hits$", path)
 isjld2file(path::AbstractString) = occursin(r".jld2$", path)
 
-"""Get all .root.hits files in a directory"""
-function magerootpaths(dirpath::AbstractString)
-    [file for file in readdir(dirpath, join=true) if isrootfile(file)]
-end
-
-function magejldpaths(dirpath::AbstractString)
+"""Get all .jld2 paths in a directory"""
+function getjldpaths(dirpath::AbstractString)
     [file for file in readdir(dirpath, join=true) if isjld2file(file)]
 end
 
-function eachevent(f::AbstractString, file::MaGeFile, args...; kwargs...)
-    return file(s, args..., kwargs...)
+function makejldpath(delimpath::AbstractString, destdir::AbstractString)
+    dir, f = splitdir(delimpath)
+    return joinpath(destdir, split(f, '.', limit=2)[1] * ".jld2")
 end
 
-function eachevent(f::AbstractString, args...; kwargs...)
-    isrootfile(f) ? DelimitedFile(f, args...; kwargs...) :
-    isjld2file(f) ? JLD2File(f, args...; kwargs...) :
-    error("$f is not a valid filepath")
+struct JLD2File
+    path::AbstractString
+end
+
+const JLD_LOCK = ReentrantLock()
+function open(func::Function, f::JLD2File, mode="r")
+    lock(JLD_LOCK) do
+        jldopen(func, f.path, mode)
+    end
+end
+
+function createjldfile(path::AbstractString)
+    open(JLD2File(path), "w") do f
+        JLD2.Group(f, "events")
+    end
+    nothing
+end
+
+function save_events(events::Vector{MaGeEvent}, path::AbstractString)
+    open(JLD2File(path), "r+") do f
+        eventgroup = f["events"]
+        for e in events
+            eventgroup[string(e.eventnum)] = e
+        end
+    end
+    nothing
+end
+
+function delimtojld(sources::AbstractVector{<:AbstractString}, destdir::AbstractString)
+    pmap(sources) do path
+        jldpath = makejldpath(path, destdir)
+        createjldfile(jldpath)
+        events = MaGeEvent[e for e in eachevent(DelimFile(path))]
+        save_events(events, jldpath)
+    end
+    nothing
+end
+
+function delimtojld(sourcedir::AbstractString, destdir::AbstractString)
+    delimtojld(getdelimpaths(sourcedir), destdir)
+end
+
+function eachevent(file::JLD2File)::Vector{MaGeEvent}
+    events = open(file) do f
+        eventgroup = f["events"]
+        return MaGeEvent[eventgroup[k] for k in keys(eventgroup)]
+    end
+    return events
+end
+
+## Useful ##
+
+function getfile(path::AbstractString)
+    isrootfile(path) ? DelimFile(path) :
+    isjld2file(path) ? JLD2File(path) :
+    error("$path is not a valid filepath")
+end
+
+function filemap(func::Function, paths::AbstractVector{<:AbstractString}; batch_size=1)
+    files = [getfile(p) for p in paths]
+    return pmap(func, files, batch_size=batch_size)
 end

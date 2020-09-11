@@ -15,6 +15,12 @@ git-tree-sha1 = "9e62e66db34540a0c919d72172cc2f642ac71260"
 uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 version = "0.5.0"
 
+[[BinDeps]]
+deps = ["Libdl", "Pkg", "SHA", "URIParser", "Unicode"]
+git-tree-sha1 = "46cf2c1668ad07aba5a9d331bdeea994a1f13856"
+uuid = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
+version = "1.0.1"
+
 [[Bzip2_jll]]
 deps = ["Libdl", "Pkg"]
 git-tree-sha1 = "03a44490020826950c68005cafb336e5ba08b7e8"
@@ -196,6 +202,14 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+
+[[MJDSigGen]]
+deps = ["BinDeps", "DelimitedFiles", "Libdl", "Test"]
+git-tree-sha1 = "4fee1c7fb25dc4e4e655cb2b75ca96d1c85a218e"
+repo-rev = "master"
+repo-url = "https://github.com/Luapulu/MJDSigGen.jl.git"
+uuid = "d3f1610b-2cc8-4877-9c4b-1cc92a82e4fd"
+version = "0.1.0"
 
 [[MacroTools]]
 deps = ["Markdown", "Random"]
@@ -396,6 +410,12 @@ deps = ["Random", "Test"]
 git-tree-sha1 = "7c53c35547de1c5b9d46a4797cf6d8253807108c"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
 version = "0.9.5"
+
+[[URIParser]]
+deps = ["Unicode"]
+git-tree-sha1 = "53a9f49546b8d2dd2e688d216421d050c9a31d0d"
+uuid = "30578b45-9adc-5946-b283-645ec420af67"
+version = "0.4.1"
 
 [[UUIDs]]
 deps = ["Random", "SHA"]

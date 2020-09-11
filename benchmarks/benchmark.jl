@@ -1,16 +1,23 @@
 using MaGeAnalysis, Profile, BenchmarkTools
 
-dir = joinpath(dirname(pathof(MaGeAnalysis)), "..", "test", "testfiles")
-testfilepath = joinpath(dir, "shortened.root.hits")
-jldfilepath = joinpath(dir, "jldtest.jld2")
+dir = realpath(joinpath(dirname(pathof(MaGeAnalysis)), "..", "test", "testfiles"))
+delimpath1 = joinpath(dir, "GWD6022_Co56_side50cm_1001.root.hits")
+delimpath2 = joinpath(dir, "GWD6022_Co56_side50cm_1871.root.hits")
+jldpath1 = joinpath(dir, "GWD6022_Co56_side50cm_1001.jld2")
+jldpath2 = joinpath(dir, "GWD6022_Co56_side50cm_1871.jld2")
 
-savetojld(testfilepath, jldfilepath)
-jldf = eachevent(jldfilepath)
+delimtojld([delimpath1, delimpath2], dir)
 
-@btime getcounts(calcenergy, eachevent(testfilepath), 2, (847, 2000))
-@btime getcounts(calcenergy, eachevent(jldfilepath), 2, (847, 2000))
-@btime getcounts(calcenergy, eachevent(jldfilepath, checkhash=true), 2, (847, 2000))
-rm(jldfilepath)
+filemap([jldpath1, jldpath2]) do f
+        mean(calcenergy, eachevent(f))
+end
 
-# Profile.print(mincount=100)
-# Profile.clear()
+@time for _ in 1:500; filemap([jldpath1, jldpath2]) do f
+        mean(calcenergy, eachevent(f))
+end; end
+
+# Profile.print()
+Profile.clear()
+
+rm(jldpath1)
+rm(jldpath2)
