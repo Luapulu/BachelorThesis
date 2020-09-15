@@ -1,28 +1,10 @@
-## Detector config/setup ##
-
-function get_detector_setup(configpath)::Struct_MJD_Siggen_Setup
-    dir, f = splitdir(configpath)
-    if !isdir(joinpath(dir, "fields"))
-        fieldgen(configpath)
-    end
-    return signal_calc_init(configpath)
-end
-
-"""Convert to detector coordinates [mm]"""
-function todetectorcoords(x::Float32, y::Float32, z::Float32, xtal_length::Float32)
-    x = 10(x + 200)
-    y = 10y
-    z = -10z + 0.5xtal_length
-    return x, y, z
-end
-
 ## MaGe .root.hits files ##
 
-isrootfile(path::String) = occursin(r".root.hits$", path)
+isdelimfile(path::String) = occursin(r".root.hits$", path)
 
 """Get all .root.hits paths in a directory"""
 function getdelimpaths(dirpath::String)
-    [file for file in readdir(dirpath, join=true) if isrootfile(file)]
+    [file for file in readdir(dirpath, join=true) if isdelimfile(file)]
 end
 
 function getparseranges(line::String)
@@ -66,12 +48,12 @@ struct DelimFile
     xtal_length::Float32
 end
 DelimFile(f::String, xtal_length::Float32) = DelimFile(Base.open(f), xtal_length)
-DelimFile(f::String, setup::Struct_MJD_Siggen_Setup) = DelimFile(f, setup.xtal_length)
+DelimFile(f::String, setup::Struct_MJD_Siggen_Setup=SETUP) = DelimFile(f, setup.xtal_length)
 
 Base.IteratorSize(::Type{DelimFile}) = Base.SizeUnknown()
 Base.eltype(::Type{DelimFile}) = MaGeEvent
 
-function readevent(file::DelimFile)::MaGeEvent
+function readevent(file::DelimFile, fileindex::Int)::MaGeEvent
     metaline = readline(file.stream)
     eventnum, hitcount, primarycount = parsemeta(metaline)
 
@@ -84,25 +66,57 @@ function readevent(file::DelimFile)::MaGeEvent
         hitvec[i] = parsehit(readline(file.stream), file.xtal_length)
     end
 
-    return MaGeEvent(hitvec, eventnum, hitcount, primarycount)
+    return MaGeEvent(hitvec, eventnum, hitcount, primarycount, fileindex)
 end
 
 Base.close(file::DelimFile) = close(file.stream)
 
-function Base.iterate(file::DelimFile, state=nothing)
+function Base.iterate(file::DelimFile, i=1)
     eof(file.stream) && return (close(file); nothing)
-    return (readevent(file), nothing)
+    return (readevent(file, i), i + 1)
 end
 
-eachevent(file::DelimFile) = file
+eachevent(path::String, setup::Struct_MJD_Siggen_Setup=SETUP) = DelimFile(path, setup)
 
 ## .jld2 files ##
 
-isjld2file(path::String) = occursin(r".jld2$", path)
+struct JLD2File
+    path::String
+end
 
-"""Get all .jld2 paths in a directory"""
-function getjldpaths(dirpath::String)
-    [file for file in readdir(dirpath, join=true) if isjld2file(file)]
+const JLD_LOCK = ReentrantLock()
+function Base.open(func::Function, f::JLD2File, mode="r")
+    lock(JLD_LOCK) do
+        jldopen(func, f.path, mode)
+    end
+end
+
+function save(o, name::String, path::String)
+    open(JLD2File(path), "w") do f
+        f[name] = o
+    end
+    nothing
+end
+
+save(events::Vector{MaGeEvent}, path::String) = save(events, "events", path)
+
+function getevents(path::String)
+    open(JLD2File(path)) do f
+        return f["events"]
+    end
+end
+
+## filemap ##
+
+function filemap(func::Function, paths::Vector{String}; batch_size=1)
+    pmap(paths, batch_size=batch_size) do path
+        @debug "Worker $(myid()) working on file $(splitdir(path)[2])"
+        return func(path)
+    end
+end
+
+function filemap(func::Function, dir::String; batch_size=1)
+    return filemap(func, readdir(dir, join=true); batch_size=batch_size)
 end
 
 function makejldpath(delimpath::String, destdir::String)
@@ -110,65 +124,15 @@ function makejldpath(delimpath::String, destdir::String)
     return joinpath(destdir, split(f, '.', limit=2)[1] * ".jld2")
 end
 
-struct JLD2File
-    path::String
-end
-
-const JLD_LOCK = ReentrantLock()
-function open(func::Function, f::JLD2File, mode="r")
-    lock(JLD_LOCK) do
-        jldopen(func, f.path, mode)
-    end
-end
-
-function createjldfile(path::String)
-    open(JLD2File(path), "w") do f
-        JLD2.Group(f, "events")
+function eventstojld(sources::Vector{String}, destdir::String, setup::Struct_MJD_Siggen_Setup=SETUP)
+    filemap(sources) do path
+        outpath = makejldpath(path, destdir)
+        save(MaGeEvent[e for e in eachevent(path, setup)], outpath)
+        @info "Worker $(myid()) wrote file $(splitdir(path)[2]) to $outpath"
     end
     nothing
 end
 
-function save_events(events::Vector{MaGeEvent}, path::String)
-    open(JLD2File(path), "r+") do f
-        eventgroup = f["events"]
-        for e in events
-            eventgroup[string(e.eventnum)] = e
-        end
-    end
-    nothing
-end
-
-function delimtojld(sources::Vector{String}, destdir::String, setup::Struct_MJD_Siggen_Setup)
-    pmap(sources) do path
-        jldpath = makejldpath(path, destdir)
-        createjldfile(jldpath)
-        events = MaGeEvent[e for e in eachevent(DelimFile(path, setup))]
-        save_events(events, jldpath)
-    end
-    nothing
-end
-
-function delimtojld(sourcedir::String, destdir::String, setup::Struct_MJD_Siggen_Setup)
-    delimtojld(getdelimpaths(sourcedir), destdir, setup)
-end
-
-function eachevent(file::JLD2File)::Vector{MaGeEvent}
-    events = open(file) do f
-        eventgroup = f["events"]
-        return MaGeEvent[eventgroup[k] for k in keys(eventgroup)]
-    end
-    return events
-end
-
-## Useful ##
-
-function getfile(path::String, args...)
-    isrootfile(path) ? DelimFile(path, args...) :
-    isjld2file(path) ? JLD2File(path) :
-    error("$path is not a valid filepath")
-end
-
-function filemap(func::Function, paths::Vector{String}; batch_size=1)
-    files = [getfile(p) for p in paths]
-    return pmap(func, files, batch_size=batch_size)
+function eventstojld(sourcedir::String, destdir::String, setup::Struct_MJD_Siggen_Setup=SETUP)
+    eventstojld(getdelimpaths(sourcedir), destdir, setup)
 end

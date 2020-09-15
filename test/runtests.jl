@@ -1,34 +1,33 @@
-using Distributed, Test
+using Distributed, Test, MJDSigGen
 
-if nprocs() < 2
-      addprocs(1)
-end
+nprocs() < 3 && addprocs(3 - nprocs())
 
 @everywhere using MaGeAnalysis, Statistics
 
-dir = realpath(joinpath(dirname(pathof(MaGeAnalysis)), "..", "test", "testfiles"))
-delimpath1 = joinpath(dir, "GWD6022_Co56_side50cm_1001.root.hits")
-delimpath2 = joinpath(dir, "GWD6022_Co56_side50cm_1871.root.hits")
-badpath = joinpath(dir, "badfile.root.hits")
-jldpath1 = joinpath(dir, "GWD6022_Co56_side50cm_1001.jld2")
-jldpath2 = joinpath(dir, "GWD6022_Co56_side50cm_1871.jld2")
+eventdir = realpath(joinpath(dirname(pathof(MaGeAnalysis)), "..", "test", "testfiles"))
+dir = realpath(joinpath(dirname(pathof(MaGeAnalysis)), "..", "test"))
 
-configpath = realpath("GWD6022_01ns.config")
-setup = get_detector_setup(configpath)
+configpath = realpath(joinpath(dir, "GWD6022_01ns.config"))
+@everywhere init_detector_setup($configpath)
 
-testevents = MaGeEvent[e for e in eachevent(getfile(delimpath1, setup))]
-delimtojld([delimpath1, delimpath2], dir, setup)
+delimpath1 = joinpath(eventdir, "GWD6022_Co56_side50cm_1001.root.hits")
+delimpath2 = joinpath(eventdir, "GWD6022_Co56_side50cm_1871.root.hits")
+badpath = joinpath(eventdir, "badfile.root.hits")
 
-@testset "Reading MaGe .root.hits files" begin
+testevents = MaGeEvent[e for e in eachevent(delimpath1)]
+
+@testset "Loading events from .root.hits files" begin
 
       @test MaGeAnalysis.parsehit(
             "-3.7 1.8 -2.1 0.3 0 22 12 9 physiDet",
-            setup.xtal_length,
+            MaGeAnalysis.SETUP.xtal_length,
       ) == MaGeHit(1979.0, -37.0, 14.5, 0.3, 0.0, 22, 12, 9)
 
-      @test Set(getdelimpaths(dir)) == Set([badpath, delimpath1, delimpath2])
+      @test Set(getdelimpaths(eventdir)) == Set([badpath, delimpath1, delimpath2])
 
       @test length(testevents) == 2934
+
+      @test all(e.fileindex == i for (i, e) in enumerate(testevents))
 
       @test testevents[end].eventnum == 999851
 
@@ -42,28 +41,87 @@ delimtojld([delimpath1, delimpath2], dir, setup)
       @test testevents[end][end] ==
             MaGeHit(10.420074, -11.8914995, 55.3214, 8.4419, 0.0, 11, 165, 16)
 
-      badfile = getfile(badpath, setup)
-      @test_throws ErrorException readevent(badfile) # hitcount too large
-      @test_throws ErrorException readevent(badfile) # no meta line there
+      badfile = MaGeAnalysis.DelimFile(badpath)
+      @test_throws ErrorException readevent(badfile, 1) # hitcount too large
+      @test_throws ErrorException readevent(badfile, 2) # no meta line there
 end
 
+jldpath1 = joinpath(dir, "GWD6022_Co56_side50cm_1001.jld2")
+jldpath2 = joinpath(dir, "GWD6022_Co56_side50cm_1871.jld2")
+isfile(jldpath1) && rm(jldpath1)
+isfile(jldpath2) && rm(jldpath2)
 
-@testset "Writing and reading .jld2 files" begin
+@testset "Saving and loading events from/to .jld2 files" begin
 
-      @test eachevent(getfile(jldpath1)) == testevents
+      eventstojld([delimpath1, delimpath2], dir)
 
-      @test eachevent(getfile(jldpath2))[1] == iterate(getfile(delimpath2, setup))[1]
+      @test getevents(jldpath1) == testevents
+
+      @test getevents(jldpath2)[1] == iterate(eachevent(delimpath2))[1]
 end
 
 
 @testset "Analysing events" begin
 
-      @test calcenergy(testevents[1]) ≈ 510.9989
+      @test energy(testevents[1]) ≈ 510.9989
 
       @test filemap([jldpath1, jldpath2]) do f
-            mean(calcenergy, eachevent(f))
+            mean(energy, getevents(f))
       end ≈ Float32[854.326, 838.74255]
 end
 
-rm(jldpath1)
-rm(jldpath2)
+@testset "Signals" begin
+
+      testsignal = get_signal(testevents[1])
+
+      @testset "Generating signals for events and hits" begin
+
+            h = testevents[1][1]
+            @test get_signal(h) ≈ MJDSigGen.get_signal!(MaGeAnalysis.SETUP, (h.x, h.y, h.z))
+
+            @test 0 < testsignal[1] < 0.05 * energy(testevents[1])
+
+            @test testsignal[end] ≈ energy(testevents[1])
+      end
+
+      sigs = get_signals(testevents[2:5], length(testevents))
+
+      @testset "Generating signals for multiple events" begin
+
+            @test ismissing(sigs[1])
+
+            get_signals!(sigs, testevents[1:3])
+
+            @test sigs[1] ≈ testsignal
+
+            new_event = MaGeEvent(testevents[3][1:5], 4, 5, 2, 1)
+
+            get_signals!(sigs, [new_event], replace = false)
+
+            @test sigs[1] ≈ testsignal
+
+            get_signals!(sigs, [new_event], replace = true)
+
+            @test !(sigs[1] ≈ testsignal)
+
+            # Reset sigs[1] to testsignal
+            sigs[1] = testsignal
+      end
+
+      signalpath = joinpath(dir, "signals.jld2")
+      isfile(signalpath) && rm(signalpath)
+
+      @testset "Saving and loaing signals" begin
+
+            name = "test_signals"
+            save(sigs, name, signalpath)
+
+            loaded_sigs = Signals(name, signalpath)
+
+            @test loaded_sigs.setup === MaGeAnalysis.SETUP
+
+            @test all(loaded_sigs.vec[i] == sigs.vec[i] for i in 1:5)
+
+            @test all(ismissing(e) for e in loaded_sigs[6:end])
+      end
+end
