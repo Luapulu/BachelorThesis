@@ -33,7 +33,7 @@ function parsehit(line::String, xtal_length::Float32)::MaGeHit
     trackid =       parse(Int32, line[ranges[7]])
     trackparentid = parse(Int32, line[ranges[8]])
 
-    x, y, z = todetectorcoords(x, y, z, xtal_length)
+    x, y, z = to_detector_coords(x, y, z, xtal_length)
 
     return MaGeHit(x, y, z, E, t, particleid, trackid, trackparentid)
 end
@@ -47,8 +47,7 @@ struct DelimFile
     stream::IO
     xtal_length::Float32
 end
-DelimFile(f::String, xtal_length::Float32) = DelimFile(Base.open(f), xtal_length)
-DelimFile(f::String, setup::Struct_MJD_Siggen_Setup=SETUP) = DelimFile(f, setup.xtal_length)
+DelimFile(f::String) = DelimFile(Base.open(f), SETUP.xtal_length)
 
 Base.IteratorSize(::Type{DelimFile}) = Base.SizeUnknown()
 Base.eltype(::Type{DelimFile}) = MaGeEvent
@@ -76,7 +75,7 @@ function Base.iterate(file::DelimFile, i=1)
     return (readevent(file, i), i + 1)
 end
 
-eachevent(path::String, setup::Struct_MJD_Siggen_Setup=SETUP) = DelimFile(path, setup)
+eachevent(path::String) = DelimFile(path)
 
 ## .jld2 files ##
 
@@ -85,32 +84,33 @@ struct JLD2File
 end
 
 const JLD_LOCK = ReentrantLock()
-function Base.open(func::Function, f::JLD2File, mode="r")
+function openjld2(func::Function, f::JLD2File, mode="r")
     lock(JLD_LOCK) do
         jldopen(func, f.path, mode)
     end
 end
 
-function save(o, name::String, path::String)
-    open(JLD2File(path), "w") do f
+function savejld2(o, name::String, path::String)
+    openjld2(JLD2File(path), "w") do f
         f[name] = o
     end
     nothing
 end
 
-save(events::Vector{MaGeEvent}, path::String) = save(events, "events", path)
-
-function getevents(path::String)
-    open(JLD2File(path)) do f
-        return f["events"]
+function loadjld2(name::String, path::String)
+    openjld2(JLD2File(path)) do f
+        return f[name]
     end
 end
+
+save_events(events::Vector{MaGeEvent}, path::String) = savejld2(events, "events", path)
+get_events(path::String) = loadjld2("events", path)
 
 ## filemap ##
 
 function filemap(func::Function, paths::Vector{String}; batch_size=1)
     pmap(paths, batch_size=batch_size) do path
-        @debug "Worker $(myid()) working on file $(splitdir(path)[2])"
+        @info "Worker $(myid()) now on file $(splitdir(path)[2])"
         return func(path)
     end
 end
@@ -124,15 +124,15 @@ function makejldpath(delimpath::String, destdir::String)
     return joinpath(destdir, split(f, '.', limit=2)[1] * ".jld2")
 end
 
-function eventstojld(sources::Vector{String}, destdir::String, setup::Struct_MJD_Siggen_Setup=SETUP)
+function eventstojld(sources::Vector{String}, destdir::String)
     filemap(sources) do path
         outpath = makejldpath(path, destdir)
-        save(MaGeEvent[e for e in eachevent(path, setup)], outpath)
-        @info "Worker $(myid()) wrote file $(splitdir(path)[2]) to $outpath"
+        save_events(MaGeEvent[e for e in eachevent(path)], outpath)
+        @info "Worker $(myid()) wrote events from $(splitdir(path)[2])\n to $outpath"
     end
     nothing
 end
 
-function eventstojld(sourcedir::String, destdir::String, setup::Struct_MJD_Siggen_Setup=SETUP)
-    eventstojld(getdelimpaths(sourcedir), destdir, setup)
+function eventstojld(sourcedir::String, destdir::String)
+    eventstojld(getdelimpaths(sourcedir), destdir)
 end

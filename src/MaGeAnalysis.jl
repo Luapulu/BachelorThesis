@@ -1,27 +1,28 @@
 module MaGeAnalysis
 
-using Distributed, JLD2, MJDSigGen, Logging
+using Distributed, JLD2, MJDSigGen, Logging, MacroTools
 using MJDSigGen:
-    Struct_MJD_Siggen_Setup, signal_calc_init, fieldgen, outside_detector
+    Struct_MJD_Siggen_Setup, signal_calc_init, fieldgen
 
 import Base
-import MJDSigGen: get_signal!
+import MJDSigGen: get_signal!, outside_detector
 
 # Fundamental structs
 export MaGeHit, MaGeEvent
 
 # Detector setup
-export init_detector_setup
+export init_setup
 
 # Working with files
-export getdelimpaths, readevent, eachevent, getjldpaths, eventstojld, getevents, filemap, save
+export eachevent, eventstojld, save_events, get_events, filemap
 
 # Signals
-export get_signal, get_signal!, Signals, get_signals, get_signals!
+export get_signal, get_signal!, get_signals, get_signals!, save_signals
 
 # Analysing data
 export energy
 
+include("utils.jl")
 
 struct MaGeHit
     x::Float32
@@ -34,8 +35,8 @@ struct MaGeHit
     trackparentid::Int32
 end
 
-struct MaGeEvent <: AbstractVector{MaGeHit}
-    hits::Vector{MaGeHit}
+struct MaGeEvent <: DenseVector{MaGeHit}
+    hits::DenseVector{MaGeHit}
     eventnum::Int
     hitcount::Int
     primarycount::Int
@@ -47,9 +48,8 @@ struct MaGeEvent <: AbstractVector{MaGeHit}
         return new(hits, eventnum, hitcount, primarycount, fileindex)
     end
 end
+@forward MaGeEvent.hits Base.eltype, Base.getindex
 Base.size(e::MaGeEvent) = (e.hitcount,)
-Base.eltype(::Type{MaGeEvent}) = MaGeHit
-Base.getindex(e::MaGeEvent, i::Int) = getindex(e.hits, i)
 Base.:(==)(e1::MaGeEvent, e2::MaGeEvent) =
     e1.primarycount == e2.primarycount &&
     e1.eventnum == e2.eventnum &&
@@ -60,13 +60,12 @@ function Base.show(io::IO, e::MaGeEvent)
     print(io, "Array{", eltype(e), "}(", size(e), ")")
     print(io, ", ", e.eventnum, ", ", e.hitcount, ", ", e.primarycount, ", ", e.fileindex, ")")
 end
-
 Base.show(io::IO, m::MIME"text/plain", e::MaGeEvent) = show(io, e)
 Base.hash(e::MaGeEvent) = hash((e.primarycount, e.eventnum, e.fileindex, e.hits))
 
 include("detector.jl")
-include("magefiles.jl")
-include("Signals.jl")
+include("files.jl")
+include("get_signals.jl")
 include("analyse.jl")
 
 end # Module
