@@ -11,8 +11,6 @@ dir = realpath(joinpath(dirname(pathof(MaGeAnalysis)), "..", "runs", "09-11-sign
 configpath = realpath(joinpath(dir, "GWD6022_01ns.config"))
 @everywhere init_setup($configpath)
 
-mkdir(joinpath(dir, "signals"))
-
 get_signals(
     e -> 800 < energy(e) < 4000,
     joinpath(dir, "events"),
