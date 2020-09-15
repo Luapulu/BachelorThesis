@@ -14,7 +14,7 @@ configpath = realpath(joinpath(dir, "GWD6022_01ns.config"))
 mkdir(joinpath(dir, "signals"))
 
 get_signals(
-    e -> 800 < energy(e) < 4000
+    e -> 800 < energy(e) < 4000,
     joinpath(dir, "events"),
     joinpath(dir, "signals")
 )
