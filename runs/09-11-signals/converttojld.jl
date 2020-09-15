@@ -1,5 +1,5 @@
 using Distributed
-nworkers() < 12 && addprocs(12 - nworkers())
+nworkers() < 12 && addprocs(13 - nworkers())
 
 @everywhere import Pkg
 @everywhere Pkg.activate(".")
