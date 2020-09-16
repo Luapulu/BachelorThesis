@@ -22,7 +22,7 @@ configpath = joinpath(dir, "GWD6022_01ns.config")
 end
 
 pmap(readdir(joinpath(dir, "events"), join=true)) do path
-    save_path = joinpath(dir, "signals", splitdir(path)[end])
+    save_path = joinpath(dir, "signals", splitext(splitdir(path)[end])[1] * "_signals.jld2")
     isfile(save_path) && return nothing
     @info "Worker $(myid()) working on $(splitdir(path)[end])"
     events = get_events(path)
