@@ -11,7 +11,7 @@ dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-16-AoE-no
 configpath = joinpath(dir, "GWD6022_01ns.config")
 @everywhere init_detector($configpath)
 
-function event_filter(e::MaGeEvent)
+@everywhere function event_filter(e::MaGeEvent)
     regions = [
         1070, 1105, 1130, 1187, 1220, 1300, 1420, 1480,
         1550, 1600, 1700, 1790, 1900, 2000, 2140, 2300,
