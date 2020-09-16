@@ -1,18 +1,11 @@
 ## Detector config/setup ##
 
-SETUP = nothing
-
-function init_setup(configpath)
-    dir, f = splitdir(configpath)
-    if !isdir(joinpath(dir, "fields"))
-        fieldgen(configpath)
-    end
-
+function init_detector(configpath)
     global SETUP
-    if isnothing(SETUP)
+    if !isdefined(MaGeSigGen, :SETUP)
         SETUP = signal_calc_init(configpath)
     else
-        @warn "Attempted to reinitialise setup"
+        error("Attempted to redefine detector setup")
     end
 
     return nothing
