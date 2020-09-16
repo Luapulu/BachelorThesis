@@ -19,4 +19,5 @@ pmap(readdir(joinpath(dir, "events"), join=true)) do path
     filtered_events = filter(e -> (800 < energy(e) < 4000), events)
     signals = get_signals(filtered_events, length(events))
     save_signals(signals, joinpath(dir, "signals", splitdir(path)[end]))
+    nothing
 end
