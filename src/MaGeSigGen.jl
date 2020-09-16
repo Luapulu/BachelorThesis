@@ -11,7 +11,7 @@ import MJDSigGen: get_signal!, outside_detector
 export MaGeHit, MaGeEvent
 
 # Detector setup
-export init_detector, outside_detector
+export init_detector, outside_detector, fieldgen
 
 # Event processing
 export eachevent, save_events, get_events, energy
