@@ -42,7 +42,13 @@ end
     eventpathjld = joinpath(dir, "GWD6022_Co56_side50cm_1001.jld")
     isfile(eventpathjld) && rm(eventpathjld)
 
-    save_events(all_events, eventpathjld)
+    save(eventpathjld, all_events)
+
+    @test get_events(eventpathjld) == all_events
+
+    isfile(eventpathjld) && rm(eventpathjld)
+
+    events_to_jld(eventpath, dir)
 
     @test get_events(eventpathjld) == all_events
 end
@@ -90,12 +96,10 @@ end
     signalpath = joinpath(dir, "testsignals.jld")
     isfile(signalpath) && rm(signalpath)
 
-    save_signals(signalvec, signalpath)
+    save(signalpath, signalvec)
 
     @test isequal(get_signals(signalpath), signalvec)
 end
-
-using Plots
 
 @testset "Signal processing" begin
     @test getA(testsignal) == maximum(diff(testsignal))

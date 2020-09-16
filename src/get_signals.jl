@@ -55,3 +55,8 @@ function get_signals(events::Vector{MaGeEvent}, l::Integer)
     signals = Vector{Union{Missing,Vector{Float32}}}(missing, l)
     return get_signals!(signals, events)
 end
+
+save(path::AbstractString, signals::Vector{Union{Missing,Vector{Float32}}}) =
+    save(path, "signals", signals)
+
+get_signals(path::AbstractString) = load(path, "signals")

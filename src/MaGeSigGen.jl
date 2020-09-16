@@ -6,6 +6,7 @@ using MJDSigGen:
 
 import Base
 import MJDSigGen: get_signal!, outside_detector
+import JLD: save
 
 # Fundamental structs
 export MaGeHit, MaGeEvent
@@ -13,11 +14,14 @@ export MaGeHit, MaGeEvent
 # Detector setup
 export init_detector, outside_detector, fieldgen
 
+# Event files
+export eachevent, save, events_to_jld, get_events
+
 # Event processing
-export eachevent, save_events, get_events, energy
+export energy
 
 # Signal generation
-export get_signal, get_signal!, get_signals, get_signals!, save_signals
+export get_signal, get_signal!, get_signals, get_signals!
 
 # Signal processing
 export getA
@@ -65,7 +69,7 @@ Base.show(io::IO, m::MIME"text/plain", e::MaGeEvent) = show(io, e)
 Base.hash(e::MaGeEvent) = hash((e.primarycount, e.eventnum, e.fileindex, e.hits))
 
 include("detector.jl")
-include("files.jl")
+include("event-files.jl")
 include("event-processing.jl")
 include("get_signals.jl")
 include("signal-processing.jl")

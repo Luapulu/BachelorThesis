@@ -68,25 +68,14 @@ function Base.iterate(file::EventFile, i=1)
     return (readevent(file, i), i + 1)
 end
 
-## .jld files ##
+eachevent(path::String) = EventFile(path)
 
-const JLD_LOCK = ReentrantLock()
-function openjld(func::Function, path::AbstractString, mode="r")
-    lock(JLD_LOCK) do
-        jldopen(func, path, mode)
-    end
+save(path::AbstractString, events::Vector{MaGeEvent}) = save(path, "events", events)
+
+function events_to_jld(event_path, save_dir)
+    save_path = joinpath(save_dir, split(splitdir(event_path)[end], ".", limit=2)[1] * ".jld")
+    save(save_path, MaGeEvent[e for e in eachevent(event_path)])
+    @info "Converted $event_path"
 end
 
-function savejld(o, name::String, path::AbstractString)
-    isfile(path) && @warn "overwriting existing file at $path"
-    openjld(path, "w") do f
-        write(f, name, o)
-    end
-    nothing
-end
-
-function loadjld(name::String, path::AbstractString)
-    openjld(path, "r") do f
-        read(f, name)
-    end
-end
+get_events(path::AbstractString) = load(path, "events")
