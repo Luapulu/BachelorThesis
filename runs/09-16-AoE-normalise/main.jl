@@ -9,10 +9,7 @@ nprocs() <= worker_num && addprocs(1 + worker_num - nprocs())
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-16-AoE-normalise"))
 
 configpath = joinpath(dir, "GWD6022_01ns.config")
-fieldgen(configpath)
 @everywhere init_detector($configpath)
-
-!isdir(joinpath(dir, "signals")) && mkdir(joinpath(dir, "signals"))
 
 function event_filter(e::MaGeEvent)
     regions = [
@@ -26,7 +23,7 @@ end
 
 pmap(readdir(joinpath(dir, "events"), join=true)) do path
     save_path = joinpath(dir, "signals", splitdir(path)[end])
-    isfile(save_path) && continue
+    isfile(save_path) && return nothing
     @info "Worker $(myid()) working on $(splitdir(path)[end])"
     events = getevents(path)
     filtered_events = filter(event_filter, events)
