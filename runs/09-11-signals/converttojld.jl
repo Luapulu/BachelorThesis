@@ -12,7 +12,7 @@ configpath = realpath(joinpath(dir, "GWD6022_01ns.config"))
 
 event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
 
-@time @distributed for path in readdir(event_dir, join=true)
+@distributed for path in readdir(event_dir, join=true)
     if occursin(r".root.hits$", path)
         save_path = joinpath(dir, "events", split(splitdir(path)[end], ".", limit=2)[1] * ".jld2")
         save_events(MaGeEvent[e for e in eachevent(eventpath)], save_path)
