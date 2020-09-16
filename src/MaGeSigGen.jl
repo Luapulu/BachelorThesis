@@ -1,6 +1,6 @@
 module MaGeSigGen
 
-using Distributed, JLD2, MJDSigGen, Logging, MacroTools
+using Distributed, JLD, MJDSigGen, Logging, MacroTools
 using MJDSigGen:
     Struct_MJD_Siggen_Setup, signal_calc_init, fieldgen
 

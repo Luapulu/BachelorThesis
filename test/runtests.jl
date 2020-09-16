@@ -37,9 +37,9 @@ testevent = all_events[1]
     @test_throws ErrorException MaGeSigGen.readevent(badfile, 2) # no meta line there
 end
 
-@testset "Saving and loading events to/from .jld2 files" begin
+@testset "Saving and loading events to/from .jld files" begin
 
-    eventpathjld = joinpath(dir, "GWD6022_Co56_side50cm_1001.jld2")
+    eventpathjld = joinpath(dir, "GWD6022_Co56_side50cm_1001.jld")
     isfile(eventpathjld) && rm(eventpathjld)
 
     save_events(all_events, eventpathjld)
@@ -86,8 +86,8 @@ signalvec = get_signals(all_events[2:3], length(all_events))
     @test !(signalvec[1] ≈ testsignal)
 end
 
-@testset "Saving and loading signals to/from .jld2 files" begin
-    signalpath = joinpath(dir, "testsignals.jld2")
+@testset "Saving and loading signals to/from .jld files" begin
+    signalpath = joinpath(dir, "testsignals.jld")
     isfile(signalpath) && rm(signalpath)
 
     save_signals(signalvec, signalpath)

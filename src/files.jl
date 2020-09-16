@@ -68,24 +68,25 @@ function Base.iterate(file::EventFile, i=1)
     return (readevent(file, i), i + 1)
 end
 
-## .jld2 files ##
+## .jld files ##
 
 const JLD_LOCK = ReentrantLock()
-function openjld2(func::Function, path::AbstractString, mode="r")
+function openjld(func::Function, path::AbstractString, mode="r")
     lock(JLD_LOCK) do
         jldopen(func, path, mode)
     end
 end
 
-function savejld2(o, name::String, path::AbstractString)
-    openjld2(path, "a+") do f
-        f[name] = o
+function savejld(o, name::String, path::AbstractString)
+    isfile(path) && @warn "overwriting existing file at $path"
+    openjld(path, "w") do f
+        write(f, name, o)
     end
     nothing
 end
 
-function loadjld2(name::String, path::AbstractString)
-    openjld2(path, "r") do f
-        return f[name]
+function loadjld(name::String, path::AbstractString)
+    openjld(path, "r") do f
+        read(f, name)
     end
 end
