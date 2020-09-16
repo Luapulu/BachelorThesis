@@ -3,7 +3,12 @@
 function init_detector(configpath)
     global SETUP
     if !isdefined(MaGeSigGen, :SETUP)
-        SETUP = signal_calc_init(configpath)
+        mktemp() do path, io
+            redirect_stdout(io) do
+                SETUP = signal_calc_init(configpath)
+                Base.Libc.flush_cstdio()
+            end
+        end
     else
         error("Attempted to redefine detector setup")
     end
