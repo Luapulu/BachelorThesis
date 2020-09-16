@@ -1,4 +1,4 @@
-using Plots, JLD, MaGeAnalysis
+using Plots, JLD, MaGeSigGen
 pyplot()
 
 spectrum = JLD.load("runs/08-29-full-spectrum/spectrum.jld")["spectrum"]

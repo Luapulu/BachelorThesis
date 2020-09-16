@@ -1,4 +1,4 @@
-name = "MaGeAnalysis"
+name = "MaGeSigGen"
 uuid = "c72a0c40-e991-40c1-bf51-d364a8cc9db3"
 authors = ["Paul Nemec"]
 version = "0.1.3"
