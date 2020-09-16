@@ -25,7 +25,7 @@ pmap(readdir(joinpath(dir, "events"), join=true)) do path
     save_path = joinpath(dir, "signals", splitdir(path)[end])
     isfile(save_path) && return nothing
     @info "Worker $(myid()) working on $(splitdir(path)[end])"
-    events = getevents(path)
+    events = get_events(path)
     filtered_events = filter(event_filter, events)
     signals = get_signals(filtered_events, length(events))
     save_signals(signals, save_path)
