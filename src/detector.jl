@@ -13,7 +13,7 @@ function init_detector(configpath)
         error("Attempted to redefine detector setup")
     end
 
-    @info "Initialised detector setup from $configpath"
+    @info "Initialised detector setup with $configpath"
     return nothing
 end
 
