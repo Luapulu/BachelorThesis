@@ -12,7 +12,7 @@ configpath = realpath(joinpath(dir, "GWD6022_01ns.config"))
 
 event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
 
-event_paths = filter(p -> occursin(r".root.hits$", path), readdir(event_dir, join=true))
+event_paths = filter(p -> occursin(r".root.hits$", p), readdir(event_dir, join=true))
 @info "Got event paths" event_paths
 
 @distributed for path in event_paths
