@@ -1,6 +1,8 @@
 *.jld
 *jld2
 *.svg
+*.pdf
+*.png
 *DS_Store
 
 *undepleted.txt
