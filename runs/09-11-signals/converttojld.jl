@@ -15,9 +15,13 @@ event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
 event_paths = filter(p -> occursin(r".root.hits$", p), readdir(event_dir, join=true))
 @info "Got event paths" event_paths
 
-@distributed for path in event_paths
+function get_and_save_events(path)
     save_path = joinpath(dir, "events", split(splitdir(path)[end], ".", limit=2)[1] * ".jld2")
     save_events(MaGeEvent[e for e in eachevent(eventpath)], save_path)
     @info "Converted $path"
     nothing
+end
+
+@time @distributed for path in event_paths
+    get_and_save_events(path)
 end
