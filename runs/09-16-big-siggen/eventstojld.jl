@@ -18,4 +18,5 @@ event_paths = ????
 @distributed for path in event_paths
     save_path = joinpath(dir, "events", split(splitdir(path)[end], ".", limit=2)[1] * ".jld2")
     save_events(MaGeEvent[e for e in eachevent(eventpath)], save_path)
+    nothing
 end
