@@ -1,12 +1,5 @@
 ## MaGe .root.hits files ##
 
-isdelimfile(path::String) = occursin(r".root.hits$", path)
-
-"""Get all .root.hits paths in a directory"""
-function getdelimpaths(dirpath::String)
-    [file for file in readdir(dirpath, join=true) if isdelimfile(file)]
-end
-
 function getparseranges(line::String)
     ranges = Vector{UnitRange{Int32}}(undef, 8)
     start = 1
@@ -43,16 +36,16 @@ function parsemeta(line::String)
     return map(intparse, split(line, " ", limit=3))
 end
 
-struct DelimFile
+struct EventFile
     stream::IO
     xtal_length::Float32
 end
-DelimFile(f::String) = DelimFile(Base.open(f), SETUP.xtal_length)
+EventFile(f::String) = EventFile(Base.open(f), SETUP.xtal_length)
 
-Base.IteratorSize(::Type{DelimFile}) = Base.SizeUnknown()
-Base.eltype(::Type{DelimFile}) = MaGeEvent
+Base.IteratorSize(::Type{EventFile}) = Base.SizeUnknown()
+Base.eltype(::Type{EventFile}) = MaGeEvent
 
-function readevent(file::DelimFile, fileindex::Int)::MaGeEvent
+function readevent(file::EventFile, fileindex::Int)::MaGeEvent
     metaline = readline(file.stream)
     eventnum, hitcount, primarycount = parsemeta(metaline)
 
@@ -68,71 +61,31 @@ function readevent(file::DelimFile, fileindex::Int)::MaGeEvent
     return MaGeEvent(hitvec, eventnum, hitcount, primarycount, fileindex)
 end
 
-Base.close(file::DelimFile) = close(file.stream)
+Base.close(file::EventFile) = close(file.stream)
 
-function Base.iterate(file::DelimFile, i=1)
+function Base.iterate(file::EventFile, i=1)
     eof(file.stream) && return (close(file); nothing)
     return (readevent(file, i), i + 1)
 end
 
-eachevent(path::String) = DelimFile(path)
-
 ## .jld2 files ##
 
-struct JLD2File
-    path::String
-end
-
 const JLD_LOCK = ReentrantLock()
-function openjld2(func::Function, f::JLD2File, mode="r")
+function openjld2(func::Function, path::AbstractString, mode="r")
     lock(JLD_LOCK) do
-        jldopen(func, f.path, mode)
+        jldopen(func, path, mode)
     end
 end
 
-function savejld2(o, name::String, path::String)
-    openjld2(JLD2File(path), "w") do f
+function savejld2(o, name::String, path::AbstractString)
+    openjld2(path, "a+") do f
         f[name] = o
     end
     nothing
 end
 
-function loadjld2(name::String, path::String)
-    openjld2(JLD2File(path)) do f
+function loadjld2(name::String, path::AbstractString)
+    openjld2(path, "r") do f
         return f[name]
     end
-end
-
-save_events(events::Vector{MaGeEvent}, path::String) = savejld2(events, "events", path)
-get_events(path::String) = loadjld2("events", path)
-
-## filemap ##
-
-function filemap(func::Function, paths::Vector{String}; batch_size=1)
-    pmap(paths, batch_size=batch_size) do path
-        @info "Worker $(myid()) now on file $(splitdir(path)[2])"
-        return func(path)
-    end
-end
-
-function filemap(func::Function, dir::String; batch_size=1)
-    return filemap(func, readdir(dir, join=true); batch_size=batch_size)
-end
-
-function makejldpath(delimpath::String, destdir::String)
-    dir, f = splitdir(delimpath)
-    return joinpath(destdir, split(f, '.', limit=2)[1] * ".jld2")
-end
-
-function eventstojld(sources::Vector{String}, destdir::String)
-    filemap(sources) do path
-        outpath = makejldpath(path, destdir)
-        save_events(MaGeEvent[e for e in eachevent(path)], outpath)
-        @info "Worker $(myid()) wrote events from $(splitdir(path)[2])\n to $outpath"
-    end
-    nothing
-end
-
-function eventstojld(sourcedir::String, destdir::String)
-    eventstojld(getdelimpaths(sourcedir), destdir)
 end

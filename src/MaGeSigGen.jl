@@ -1,4 +1,4 @@
-module MaGeAnalysis
+module MaGeSigGen
 
 using Distributed, JLD2, MJDSigGen, Logging, MacroTools
 using MJDSigGen:
@@ -11,16 +11,17 @@ import MJDSigGen: get_signal!, outside_detector
 export MaGeHit, MaGeEvent
 
 # Detector setup
-export init_setup
+export init_detector, outside_detector
 
-# Working with files
-export eachevent, eventstojld, save_events, get_events, filemap
+# Event processing
+export eachevent, save_events, get_events, energy
 
-# Signals
+# Signal generation
 export get_signal, get_signal!, get_signals, get_signals!, save_signals
 
-# Analysing data
-export energy
+# Signal processing
+export getA
+
 
 include("utils.jl")
 
@@ -36,7 +37,7 @@ struct MaGeHit
 end
 
 struct MaGeEvent <: DenseVector{MaGeHit}
-    hits::DenseVector{MaGeHit}
+    hits::Vector{MaGeHit}
     eventnum::Int
     hitcount::Int
     primarycount::Int
@@ -65,7 +66,8 @@ Base.hash(e::MaGeEvent) = hash((e.primarycount, e.eventnum, e.fileindex, e.hits)
 
 include("detector.jl")
 include("files.jl")
+include("event-processing.jl")
 include("get_signals.jl")
-include("analyse.jl")
+include("signal-processing.jl")
 
 end # Module
