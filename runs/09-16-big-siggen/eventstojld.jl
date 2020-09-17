@@ -1,6 +1,5 @@
 using Distributed
-worker_num = 10
-nprocs() <= worker_num && addprocs(1 + worker_num - nprocs())
+nworkers() < 12 && addprocs(13 - nworkers())
 
 @everywhere import Pkg
 @everywhere Pkg.activate(".")
@@ -9,14 +8,14 @@ nprocs() <= worker_num && addprocs(1 + worker_num - nprocs())
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-16-big-siggen"))
 
 configpath = joinpath(dir, "GWD6022_01ns.config")
+fieldgen(configpath)
 @everywhere init_detector($configpath)
 
-event_paths = ????
+event_dir = ???
+event_paths = filter(p -> occursin(r".root.hits$", p), readdir(event_dir, join=true))
 
 !isdir(joinpath(dir, "events")) && mkdir(joinpath(dir, "events"))
 
-@distributed for path in event_paths
-    save_path = joinpath(dir, "events", split(splitdir(path)[end], ".", limit=2)[1] * ".jld2")
-    save_events(MaGeEvent[e for e in eachevent(eventpath)], save_path)
-    nothing
+pmap(event_paths) do path
+    events_to_jld(path, joinpath(dir, "events"))
 end
