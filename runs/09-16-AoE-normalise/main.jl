@@ -21,14 +21,17 @@ configpath = joinpath(dir, "GWD6022_01ns.config")
     return any(r - 20 < energy(e) < r + 20 for r in regions)
 end
 
-pmap(readdir(joinpath(dir, "events"), join=true)) do path
-    save_path = joinpath(dir, "signals", splitext(splitdir(path)[end])[1] * "_signals.jld2")
+event_dir = joinpath(dir, "events")
+
+pmap(readdir(event_dir, join=true)) do path
+    save_path = joinpath(dir, "signals", splitext(splitdir(path)[end])[1] * "_signals.jld")
     isfile(save_path) && return nothing
+
     @info "Worker $(myid()) working on $(splitdir(path)[end])"
     events = get_events(path)
     filtered_events = filter(event_filter, events)
     signals = get_signals(filtered_events, length(events))
-    save_signals(signals, save_path)
+    save_signals(save_path, signals)
     @info "Worker $(myid()) saved signals"
     nothing
 end
