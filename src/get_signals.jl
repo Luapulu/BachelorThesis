@@ -6,19 +6,19 @@ end
 
 get_signal(location::NTuple{3,T} where T) = get_signal!(SETUP, location)
 
-function get_signal!(pulse::DenseVector{Float32}, h::MaGeHit)
+function get_signal!(pulse::DenseVector{Float32}, h::Hit)
     if !outside_detector((h.x, h.y, h.z))
         get_signal!(pulse, (h.x, h.y, h.z))
     end
     return pulse
 end
 
-get_signal(h::MaGeHit) = get_signal((h.x, h.y, h.z))
+get_signal(h::Hit) = get_signal((h.x, h.y, h.z))
 
 function get_signal!(
     final_pulse::DenseVector{Float32},
     working_pulse::DenseVector{Float32},
-    event::MaGeEvent,
+    event::Event,
 )
     for hit in event
         get_signal!(working_pulse, hit)
@@ -27,7 +27,7 @@ function get_signal!(
     return final_pulse
 end
 
-function get_signal(e::MaGeEvent, ntsteps_out=SETUP.ntsteps_out)
+function get_signal(e::Event, ntsteps_out=SETUP.ntsteps_out)
     get_signal!(zeros(Float32, ntsteps_out), Vector{Float32}(undef, ntsteps_out), e)
 end
 
@@ -35,7 +35,7 @@ end
 
 function get_signals!(
     signals::Vector{Union{Missing,Vector{Float32}}},
-    events::AbstractVector{MaGeEvent},
+    events::AbstractVector{Event},
     ntsteps_out::Integer = SETUP.ntsteps_out,
     working_pulse::DenseVector{Float32} = Vector{Float32}(undef, ntsteps_out);
     replace::Bool = false,
@@ -51,7 +51,7 @@ function get_signals!(
     return signals
 end
 
-function get_signals(events::Vector{MaGeEvent}, l::Integer)
+function get_signals(events::Vector{Event}, l::Integer)
     signals = Vector{Union{Missing,Vector{Float32}}}(missing, l)
     return get_signals!(signals, events)
 end

@@ -8,7 +8,7 @@ init_detector(configpath)
 eventpath = joinpath(dir, "events", "GWD6022_Co56_side50cm_1001.root.hits")
 badpath = joinpath(dir, "badfile.root.hits")
 
-all_events = MaGeEvent[e for e in eachevent(eventpath)]
+all_events = Event[e for e in get_events(eventpath)]
 testevent = all_events[1]
 
 @testset "Loading events from .root.hits files" begin
@@ -16,7 +16,7 @@ testevent = all_events[1]
     @test MaGeSigGen.parsehit(
         "-3.7 1.8 -2.1 0.3 0 22 12 9 physiDet",
         MaGeSigGen.SETUP.xtal_length,
-    ) == MaGeHit(1979.0, -37.0, 14.5, 0.3, 0.0, 22, 12, 9)
+    ) == Hit(1979.0, -37.0, 14.5, 0.3, 0.0, 22, 12, 9)
 
     @test length(all_events) == 2934
 
@@ -28,13 +28,13 @@ testevent = all_events[1]
 
     @test all_events[end].primarycount == 4
 
-    @test all_events[end][1] == MaGeHit(31.860046, -12.325, 56.9103, 0.07764, 0.0, 22, 9, 6)
+    @test all_events[end][1] == Hit(31.860046, -12.325, 56.9103, 0.07764, 0.0, 22, 9, 6)
 
-    @test all_events[end][end] == MaGeHit(10.420074, -11.8914995, 55.3214, 8.4419, 0.0, 11, 165, 16)
+    @test all_events[end][end] == Hit(10.420074, -11.8914995, 55.3214, 8.4419, 0.0, 11, 165, 16)
 
-    badfile = MaGeSigGen.EventFile(badpath)
-    @test_throws ErrorException MaGeSigGen.readevent(badfile, 1) # hitcount too large
-    @test_throws ErrorException MaGeSigGen.readevent(badfile, 2) # no meta line there
+    badfile = MaGeSigGen.RootHitEvents(badpath)
+    @test_throws ErrorException MaGeSigGen.parse_event(badfile, 1) # hitcount too large
+    @test_throws ErrorException MaGeSigGen.parse_event(badfile, 2) # no meta line there
 end
 
 @testset "Saving and loading events to/from .jld files" begin
@@ -81,7 +81,7 @@ signalvec = get_signals(all_events[2:3], length(all_events))
 
     @test signalvec[1] ≈ testsignal
 
-    new_event = MaGeEvent(all_events[3][1:5], 4, 5, 2, 1)
+    new_event = Event(all_events[3][1:5], 4, 5, 2, 1)
 
     get_signals!(signalvec, [new_event], replace = false)
 
