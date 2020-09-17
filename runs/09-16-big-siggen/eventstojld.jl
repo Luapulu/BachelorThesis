@@ -1,5 +1,6 @@
 using Distributed
-nworkers() < 12 && addprocs(13 - nworkers())
+worker_num = 200
+nprocs() <= worker_num && addprocs(1 + worker_num - nprocs())
 
 @everywhere import Pkg
 @everywhere Pkg.activate(".")

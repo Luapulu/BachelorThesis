@@ -31,7 +31,7 @@ pmap(readdir(event_dir, join=true)) do path
     events = get_events(path)
     filtered_events = filter(event_filter, events)
     signals = get_signals(filtered_events, length(events))
-    save_signals(save_path, signals)
+    save(save_path, signals)
     @info "Worker $(myid()) saved signals"
     nothing
 end
