@@ -10,22 +10,16 @@ function init_detector(configpath)
             end
         end
     else
-        error("Attempted to redefine detector setup")
+        error("attempted to redefine detector setup")
     end
 
     @info "Initialised detector setup with $configpath"
     return nothing
 end
 
-outside_detector(location::NTuple{3, T} where T) = outside_detector(SETUP, location)
+outside_detector(location::NTuple{3, T})  where {T} = outside_detector(SETUP, location)
 
 """Convert to detector coordinates [mm]"""
-function to_detector_coords(
-    x::T, y::T, z::T;
-    xtal_length::Float32 = SETUP.xtal_length,
-) where {T<:AbstractFloat}
-    x = 10(x + 200)
-    y = 10y
-    z = -10z + 0.5xtal_length
-    return x, y, z
+function to_detector_coords(x::Real, y::Real, z::Real; xtal_length::Real = SETUP.xtal_length)
+    return 10(z + 200), 10x, -10y + 0.5xtal_length
 end
