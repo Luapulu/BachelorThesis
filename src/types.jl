@@ -90,6 +90,8 @@ struct Event{V<:AbstractVector} <: AbstractEvent
     end
 end
 
+Event{V}(e) where {V} = Event{V}(eventnum(e), hitcount(e), primarycount(e), hits(e))
+
 function Event(eventnum, hitcount, primarycount, hits::V) where {V<:AbstractVector}
     Event{V}(eventnum, hitcount, primarycount, hits)
 end
@@ -98,8 +100,6 @@ function Event{Vector{H}}(eventnum, hitcount, primarycount, hits::AbstractHitIte
     Event{Vector{H}}(eventnum, hitcount, primarycount, collect(H, hits))
 end
 
-Event{V}(e) where {V} = Event{V}(eventnum(e), hitcount(e), primarycount(e), hits(e))
-
 Base.eltype(::Type{Event{V}}) where {V} = eltype(V)
 
 hits(e::Event) = e.hits
@@ -107,18 +107,6 @@ hitcount(e::Event) = e.hitcount
 eventnum(e::Event) = e.eventnum
 primarycount(e::Event) = e.primarycount
 
-
-## Event Collection ##
-
-abstract type EventCollection end
-
-Base.IteratorSize(::Type{<:EventCollection}) = Base.SizeUnknown()
-
-Base.IteratorEltype(::Type{<:EventCollection}) = Base.HasEltype()
-
-struct VectorEvents <: EventCollection
-    events::Vector
-end
 
 ## Signal Collection ##
 
