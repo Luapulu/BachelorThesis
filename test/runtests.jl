@@ -2,10 +2,9 @@ using Test, MaGeSigGen, MJDSigGen, Statistics
 
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "test"))
 
-configpath = joinpath(dir, "GWD6022_01ns.config")
-
 
 @testset "Detector" begin
+    configpath = joinpath(dir, "GWD6022_01ns.config")
     @test_logs (:info, "Initialised detector setup with $configpath") init_detector(configpath)
 
     @test_throws ErrorException init_detector(configpath)
@@ -37,6 +36,7 @@ end
     @test_throws InexactError Hit(1, 2, 3, 4, 5, 1.1, 2.2, 3.3)
 end
 
+
 @testset "Events" begin
     v = [Hit(i*i, sqrt(i), 3.5, 4, 0.5, 1, 2, 3) for i in 1:5]
     e = Event(1, 5, 2, v)
@@ -52,6 +52,7 @@ end
 
     @test_throws ArgumentError Event(1, 3, 2, v)
 end
+
 
 @testset "Parsing .root.hits files" begin
     meta_stream = IOBuffer("""624 119 3\n""")
@@ -79,9 +80,9 @@ end
         1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet
         """)
 
-    reader = MaGeSigGen.RootHitReader(test_stream)
+    test_reader = MaGeSigGen.RootHitReader(test_stream)
 
-    result, _ = iterate(reader)
+    result, _ = iterate(test_reader)
     enum, hitcnt, primcnt, hit_itr = result
     @test enum == 624
     @test hitcnt == 2
@@ -95,18 +96,18 @@ end
         @test all(hit .== parsed_hits[i])
     end
 
-    @test isnothing(iterate(reader))
+    @test isnothing(iterate(test_reader))
 
     eventpath = joinpath(dir, "events", "GWD6022_Co56_side50cm_1001.root.hits")
 
     @test MaGeSigGen.is_root_hit_file(eventpath)
 
-    reader = MaGeSigGen.RootHitReader(eventpath)
-    for e in Base.Iterators.take(reader, 2933)
+    filereader = MaGeSigGen.RootHitReader(eventpath)
+    for e in Base.Iterators.take(filereader, 2933)
         Event{Vector{Hit}}(e)
     end
 
-    last, _ = iterate(reader)
+    last, _ = iterate(filereader)
 
     lastevent = Event{Vector{Hit}}(last)
 
@@ -120,7 +121,7 @@ end
 
     @test lastevent[end] == Hit(10.42, -11.8915, 55.3214, 8.4419, 0.0, 11, 165, 16)
 
-    @test isnothing(iterate(reader))
+    @test isnothing(iterate(filereader))
 
     badpath = joinpath(dir, "badfile.root.hits")
     badreader = MaGeSigGen.RootHitReader(badpath)
