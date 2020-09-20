@@ -1,77 +1,64 @@
-## Parsing .root.hits files ##
-
 function parse_meta(stream::IO)
-    eventnum = tryparse(Int32, readuntil(stream, ' '))
-    hitcount = tryparse(Int32, readuntil(stream, ' '))
-    primarycount = tryparse(Int32, readuntil(stream, '\n'))
+    eventnum = parse(Int64, readuntil(stream, ' '))
+    hitcount = parse(Int64, readuntil(stream, ' '))
+    primarycount = parse(Int64, readuntil(stream, '\n'))
     return eventnum, hitcount, primarycount
 end
 
 function parse_hit(stream::IO)
-    x = tryparse(Float64, readuntil(stream, ' '))
-    y = tryparse(Float64, readuntil(stream, ' '))
-    z = tryparse(Float64, readuntil(stream, ' '))
-    E = tryparse(Float64, readuntil(stream, ' '))
-    t = tryparse(Float64, readuntil(stream, ' '))
-    particleid = tryparse(Int64, readuntil(stream, ' '))
-    trackid = tryparse(Int64, readuntil(stream, ' '))
-    trackparentid = tryparse(Int64, readuntil(stream, ' '))
+    x = parse(Float64, readuntil(stream, ' '))
+    y = parse(Float64, readuntil(stream, ' '))
+    z = parse(Float64, readuntil(stream, ' '))
+    E = parse(Float64, readuntil(stream, ' '))
+    t = parse(Float64, readuntil(stream, ' '))
+    particleid = parse(Int64, readuntil(stream, ' '))
+    trackid = parse(Int64, readuntil(stream, ' '))
+    trackparentid = parse(Int64, readuntil(stream, ' '))
 
     skip(stream, 9)
 
     x, y, z = to_detector_coords(x, y, z)
 
-    return HitTuple((x, y, z, E, t, particleid, trackid, trackparentid))
+    return x, y, z, E, t, particleid, trackid, trackparentid
 end
 
-function parse_hits!(hitvec::AbstractVector, stream::IO, hitcount::Integer)
-    length(hitvec) < hitcount && resize!(hitvec, hitcount)
-    for i = 1:hitcount
-        hitvec[i] = parse_hit(ranges, readline(stream))
-    end
-    return hitvec
+struct RootHitIter
+    stream::IO
+    hitcount::Integer
 end
 
+Base.IteratorSize(::Type{RootHitIter}) = Base.HasLength()
+Base.length(itr::RootHitIter) = itr.hitcount
 
-## RootHitEvents ##
+Base.IteratorEltype(::Type{RootHitIter}) = Base.HasEltype()
+Base.eltype(::Type{RootHitIter}) = Tuple{Float64,Float64,Float64,Float64,Float64,Int64,Int64,Int64}
 
-struct RootHitEvents{E} <: EventCollection{E}
+function Base.iterate(itr::RootHitIter, i = 0)
+    i == itr.hitcount && return nothing
+    return parse_hit(itr.stream), i + 1
+end
+
+struct RootHitReader
     stream::IO
 end
-RootHitEvents{E}(f::AbstractString) where E = RootHitEvents{E}(Base.open(f, lock = false))
+RootHitReader(f::AbstractString) = RootHitReader(open(f))
 
-function Base.iterate(
-    es::RootHitEvents{E},
-    hitvec = Vector{H}(undef, 500),
-) where {E<:AbstractEvent{H}} where {H}
-    eof(es.stream) && return (close(es.stream); nothing)
-    eventnum, hitcount, primarycount = parse_meta(es.stream)
-    parse_hits!(hitvec, es.stream, hitcount)
-    return E(hitvec, eventnum, hitcount, primarycount), hitvec
+Base.IteratorSize(::Type{RootHitReader}) = Base.SizeUnknown()
+
+const RootHitReaderElType = Tuple{Int64,Int64,Int64,RootHitIter}
+Base.IteratorEltype(::Type{RootHitReader}) = Base.HasEltype()
+Base.eltype(::Type{RootHitReader}) = RootHitReaderElType
+
+function Base.iterate(reader::RootHitReader, state = nothing)
+    eof(reader.stream) && return (close(reader.stream); nothing)
+    enum, hitcnt, primcnt = parse_meta(reader.stream)
+    return (enum, hitcnt, primcnt, RootHitIter(reader.stream, hitcnt)), nothing
 end
 
-## JLDEvents ##
-
-struct JLDEvents{E} <: EventCollection{E}
-    events::Vector{E}
+function Event{Vector{H}}(e::RootHitReaderElType) where {H}
+    Event{Vector{H}}(e[1], e[2], e[3], collect(H, e[4]))
 end
-
-get_events(JLDEvents, path::AbstractString) = load(path, "events")
-save(path::AbstractString, es::EventCollection) = save(path, "events", collect(EventTuple, es))
-get_events(::Type{EC}, path::AbstractString) where {EC<:EventCollection} = EC(path)
 
 ## get_events ##
 
 is_root_hit_file(path::AbstractString) = occursin(r"root.hits$", path)
-
-const EVENT_FILES = [
-    (is_root_hit_file, RootHitEvents)
-]
-
-function get_events(path::AbstractString)
-    for (test, T) in FILE_QUERIES
-        test(path) && return get_events(T, path)
-    end
-    error("no registered file type for $path")
-    nothing
-end

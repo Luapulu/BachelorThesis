@@ -4,12 +4,8 @@ dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "test"))
 
 configpath = joinpath(dir, "GWD6022_01ns.config")
 
-eventpath = joinpath(dir, "events", "GWD6022_Co56_side50cm_1001.root.hits")
-badpath = joinpath(dir, "badfile.root.hits")
-
 
 @testset "Detector" begin
-
     @test_logs (:info, "Initialised detector setup with $configpath") init_detector(configpath)
 
     @test_throws ErrorException init_detector(configpath)
@@ -25,12 +21,11 @@ end
 
 
 @testset "Hits" begin
-
     h = Hit(1.1, 2.2, 3.3, 4.4, 5.5, 6, 7, 8)
 
-    @test location(h) == (1.1, 2.2, 3.3)
-    @test energy(h) == 4.4
-    @test time(h) == 5.5
+    @test location(h) == (1.1f0, 2.2f0, 3.3f0)
+    @test energy(h) == 4.4f0
+    @test time(h) == 5.5f0
     @test particleid(h) == 6
     @test trackid(h) == 7
     @test trackparentid(h) == 8
@@ -43,60 +38,98 @@ end
 end
 
 @testset "Events" begin
-    v = [Hit(i*i, sqrt(i), 3.5, 4, 1000.5, 1, 2, 3) for i in 1:5]
-    e = MaGeSigGen.Event(1, 5, 2, v)
+    v = [Hit(i*i, sqrt(i), 3.5, 4, 0.5, 1, 2, 3) for i in 1:5]
+    e = Event(1, 5, 2, v)
 
+    @test eltype(typeof(e)) == Hit
+
+    @test energy(e) == 4*5
+
+    @test hits(e) == v
+    @test eventnum(e) == 1
+    @test length(e) == hitcount(e) == 5
+    @test primarycount(e) == 2
+
+    @test_throws ArgumentError Event(1, 3, 2, v)
+end
+
+@testset "Parsing .root.hits files" begin
+    meta_stream = IOBuffer("""624 119 3\n""")
+    @test MaGeSigGen.parse_meta(meta_stream) == (624, 119, 3)
+
+    hit_stream = IOBuffer(
+        """
+        1.60738 -2.07026 -201.594 0.1638 0 22 187 4 physiDet
+        1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet
+        """)
+
+    parsed1 = MaGeSigGen.parse_hit(hit_stream)
+    known1 = (-15.94, 16.0738, 53.2026, 0.1638, 0, 22, 187, 4)
+    @test all(parsed1 .≈ known1)
+
+    parsed2 = MaGeSigGen.parse_hit(hit_stream)
+    x, y, z = MaGeSigGen.to_detector_coords(1.91771, -2.52883, -201.842)
+    known2 = (x, y, z, 0.24458, 0, 22, 187, 4)
+    @test all(parsed2 .≈ known2)
+
+    test_stream = IOBuffer(
+        """
+        624 2 3
+        1.60738 -2.07026 -201.594 0.1638 0 22 187 4 physiDet
+        1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet
+        """)
+
+    reader = MaGeSigGen.RootHitReader(test_stream)
+
+    result, _ = iterate(reader)
+    enum, hitcnt, primcnt, hit_itr = result
+    @test enum == 624
+    @test hitcnt == 2
+    @test primcnt == 3
+
+    parsed_hits = [
+        MaGeSigGen.parse_hit(IOBuffer("1.60738 -2.07026 -201.594 0.1638 0 22 187 4 physiDet")),
+        MaGeSigGen.parse_hit(IOBuffer("1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet"))
+    ]
+    for (i, hit) in enumerate(hit_itr)
+        @test all(hit .== parsed_hits[i])
+    end
+
+    @test isnothing(iterate(reader))
+
+    eventpath = joinpath(dir, "events", "GWD6022_Co56_side50cm_1001.root.hits")
+
+    @test MaGeSigGen.is_root_hit_file(eventpath)
+
+    reader = MaGeSigGen.RootHitReader(eventpath)
+    for e in Base.Iterators.take(reader, 2933)
+        Event{Vector{Hit}}(e)
+    end
+
+    last, _ = iterate(reader)
+
+    lastevent = Event{Vector{Hit}}(last)
+
+    @test eventnum(lastevent) == 999851
+
+    @test hitcount(lastevent) == 319
+
+    @test primarycount(lastevent) == 4
+
+    @test lastevent[1] == Hit(31.86, -12.325, 56.9103, 0.07764, 0.0, 22, 9, 6)
+
+    @test lastevent[end] == Hit(10.42, -11.8915, 55.3214, 8.4419, 0.0, 11, 165, 16)
+
+    @test isnothing(iterate(reader))
+
+    badpath = joinpath(dir, "badfile.root.hits")
+    badreader = MaGeSigGen.RootHitReader(badpath)
+    e, _ = iterate(badreader)
+    @test_throws ArgumentError Event{Vector{Hit}}(e)
+    @test_throws ArgumentError iterate(badreader)
 end
 
 
-# @testset "Loading events from .root.hits files" begin
-#
-#     @test MaGeSigGen.parse_hit(
-#         IOBuffer("-3.7 1.8 -2.1 0.3 0 22 12 9 physiDet"),
-#         MaGeSigGen.SETUP.xtal_length,
-#     ) == Hit(1979.0, -37.0, 14.5, 0.3, 0.0, 22, 12, 9)
-#
-#     @test length(all_events) == 2934
-#
-#     @test all(e.fileindex == i for (i, e) in enumerate(all_events))
-#
-#     @test all_events[end].eventnum == 999851
-#
-#     @test all_events[end].hitcount == 319
-#
-#     @test all_events[end].primarycount == 4
-#
-#     @test all_events[end][1] == Hit(31.860046, -12.325, 56.9103, 0.07764, 0.0, 22, 9, 6)
-#
-#     @test all_events[end][end] == Hit(10.420074, -11.8914995, 55.3214, 8.4419, 0.0, 11, 165, 16)
-#
-#     badfile = MaGeSigGen.RootHitEvents(badpath)
-#     @test_throws ErrorException MaGeSigGen.parse_event(badfile, 1) # hitcount too large
-#     @test_throws ErrorException MaGeSigGen.parse_event(badfile, 2) # no meta line there
-# end
-#
-# @testset "Saving and loading events to/from .jld files" begin
-#
-#     eventpathjld = joinpath(dir, "GWD6022_Co56_side50cm_1001.jld")
-#     isfile(eventpathjld) && rm(eventpathjld)
-#
-#     save(eventpathjld, all_events)
-#
-#     @test get_events(eventpathjld) == all_events
-#
-#     isfile(eventpathjld) && rm(eventpathjld)
-#
-#     events_to_jld(eventpath, dir)
-#
-#     @test get_events(eventpathjld) == all_events
-# end
-#
-#
-# @testset "Event processing" begin
-#
-#     @test energy(testevent) == 510.9989f0
-# end
-#
 # testsignal = get_signal(testevent)
 # signalvec = get_signals(all_events[2:3], length(all_events))
 #

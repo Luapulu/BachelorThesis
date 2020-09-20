@@ -26,6 +26,10 @@ end
 function Hit(nt::NamedTuple)
     Hit(nt[:x], nt[:y], nt[:z], nt[:E], nt[:t], nt[:particleid], nt[:trackid], nt[:trackparentid])
 end
+Base.convert(::Type{Hit}, nt::NamedTuple) = Hit(nt)
+
+Hit(t::Tuple) = Hit(t...)
+Base.convert(::Type{Hit}, t::Tuple) = Hit(t)
 
 location(h::Hit) = (h.x, h.y, h.z)
 energy(h::Hit) = h.E
@@ -34,20 +38,20 @@ particleid(h::Hit) = h.particleid
 trackid(h::Hit) = h.trackid
 trackparentid(h::Hit) = h.trackparentid
 
-Base.convert(::Type{Hit}, nt::NamedTuple) = Hit(nt)
-
 ## Abstract Event ##
 
-abstract type AbstractEvent{H} end
+abstract type AbstractEvent end
 
 Base.IteratorSize(::Type{<:AbstractEvent}) = Base.HasLength()
 Base.length(e::AbstractEvent) = hitcount(e)
 
 Base.IteratorEltype(::Type{<:AbstractEvent}) = Base.HasEltype()
-Base.eltype(e::Type{<:AbstractEvent{H}}) where {H} = H
 
 Base.iterate(e::AbstractEvent) = iterate(hits(e))
 Base.iterate(e::AbstractEvent, state) = iterate(hits(e), state)
+
+Base.getindex(e::AbstractEvent, i) = getindex(hits(e), i)
+Base.lastindex(e::AbstractEvent) = lastindex(hits(e))
 
 function Base.show(io::IO, e::AbstractEvent)
     print(io, "Event(")
@@ -68,20 +72,24 @@ energy(event::E) where {E<:AbstractEvent} = sum(energy, hits(event))
 
 ## Event ##
 
-struct Event{H,V<:AbstractVector{H}} <: AbstractEvent{H}
+struct Event{V<:AbstractVector} <: AbstractEvent
     eventnum::Int32
     hitcount::Int32
     primarycount::Int32
     hits::V
-    function Event{H,V}(eventnum, hitcount, primarycount, hits) where {H,V}
-        length(hits) == hitcount && return new(eventnum, hitcount, primarycount, hits)
+    function Event{V}(eventnum, hitcount, primarycount, hits) where {V<:AbstractVector}
+        if length(hits) == hitcount
+            return new(eventnum, hitcount, primarycount, hits)
+        end
         throw(ArgumentError("hitcount $hitcount must equal length of hit vector $(length(hits))"))
     end
 end
 
-function Event(eventnum, hitcount, primarycount, hits::V) where {V<:AbstractVector{H} where {H}}
-    Event{H,V}(eventnum, hitcount, primarycount, hits)
+function Event(eventnum, hitcount, primarycount, hits::V) where {V<:AbstractVector}
+    Event{V}(eventnum, hitcount, primarycount, hits)
 end
+
+Base.eltype(::Type{Event{V}}) where {V} = eltype(V)
 
 hits(e::Event) = e.hits
 hitcount(e::Event) = e.hitcount

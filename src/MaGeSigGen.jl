@@ -15,10 +15,9 @@ export init_detector, outside_detector, fieldgen
 export Hit, location, energy, time, particleid, trackid, trackparentid
 
 # Events
-export hits, hitcount, eventnum, primarycount
+export Event, hits, hitcount, eventnum, primarycount
 
 # Event files
-export save, events_to_jld, get_events
 
 # Signal generation
 export get_signal, get_signal!, get_signals, get_signals!
@@ -30,7 +29,7 @@ export getA
 include("detector.jl")
 include("types.jl")
 include("event-files.jl")
-include("get_signals.jl")
-include("signal-processing.jl")
+# include("get_signals.jl")
+# include("signal-processing.jl")
 
 end # Module
