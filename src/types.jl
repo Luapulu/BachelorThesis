@@ -38,6 +38,11 @@ particleid(h::Hit) = h.particleid
 trackid(h::Hit) = h.trackid
 trackparentid(h::Hit) = h.trackparentid
 
+## AbstractHitIter ##
+
+abstract type AbstractHitIter end
+
+
 ## Abstract Event ##
 
 abstract type AbstractEvent end
@@ -89,6 +94,12 @@ function Event(eventnum, hitcount, primarycount, hits::V) where {V<:AbstractVect
     Event{V}(eventnum, hitcount, primarycount, hits)
 end
 
+function Event{Vector{H}}(eventnum, hitcount, primarycount, hits::AbstractHitIter) where {H}
+    Event{Vector{H}}(eventnum, hitcount, primarycount, collect(H, hits))
+end
+
+Event{V}(e) where {V} = Event{V}(eventnum(e), hitcount(e), primarycount(e), hits(e))
+
 Base.eltype(::Type{Event{V}}) where {V} = eltype(V)
 
 hits(e::Event) = e.hits
@@ -99,13 +110,15 @@ primarycount(e::Event) = e.primarycount
 
 ## Event Collection ##
 
-abstract type EventCollection{E<:AbstractEvent} end
+abstract type EventCollection end
 
-Base.IteratorSize(::Type{EventCollection}) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:EventCollection}) = Base.SizeUnknown()
 
-Base.IteratorEltype(::Type{EventCollection}) = Base.HasEltype()
-Base.eltype(::Type{EventCollection{E}}) where {E} = E
+Base.IteratorEltype(::Type{<:EventCollection}) = Base.HasEltype()
 
+struct VectorEvents <: EventCollection
+    events::Vector
+end
 
 ## Signal Collection ##
 

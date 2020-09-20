@@ -22,7 +22,7 @@ function parse_hit(stream::IO)
     return x, y, z, E, t, particleid, trackid, trackparentid
 end
 
-struct RootHitIter
+struct RootHitIter <: AbstractHitIter
     stream::IO
     hitcount::Integer
 end
@@ -54,6 +54,11 @@ function Base.iterate(reader::RootHitReader, state = nothing)
     enum, hitcnt, primcnt = parse_meta(reader.stream)
     return (enum, hitcnt, primcnt, RootHitIter(reader.stream, hitcnt)), nothing
 end
+
+eventnum(e::RootHitReaderElType) = e[1]
+hitcount(e::RootHitReaderElType) = e[2]
+primarycount(e::RootHitReaderElType) = e[3]
+hits(e::RootHitReaderElType) = e[4]
 
 function Event{Vector{H}}(e::RootHitReaderElType) where {H}
     Event{Vector{H}}(e[1], e[2], e[3], collect(H, e[4]))
