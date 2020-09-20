@@ -102,14 +102,12 @@ end
 
     @test MaGeSigGen.is_root_hit_file(eventpath)
 
-    filereader = MaGeSigGen.RootHitReader(eventpath)
-    for e in Base.Iterators.take(filereader, 2933)
-        Event{Vector{Hit}}(e)
-    end
+    @test isa(MaGeSigGen.event_reader(eventpath), MaGeSigGen.RootHitReader)
 
-    last, _ = iterate(filereader)
+    filereader = load_events(Event{Vector{Hit}}, eventpath)
+    for e in Base.Iterators.take(filereader, 2933); "skipping all but last event"; end
 
-    lastevent = Event{Vector{Hit}}(last)
+    lastevent, _ = iterate(filereader)
 
     @test eventnum(lastevent) == 999851
 

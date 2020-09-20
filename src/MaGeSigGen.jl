@@ -18,6 +18,7 @@ export Hit, location, energy, time, particleid, trackid, trackparentid
 export Event, hits, hitcount, eventnum, primarycount
 
 # Event files
+export load_events
 
 # Signal generation
 export get_signal, get_signal!, get_signals, get_signals!
@@ -29,7 +30,7 @@ export getA
 include("detector.jl")
 include("types.jl")
 include("event-files.jl")
-# include("get_signals.jl")
+include("get_signals.jl")
 # include("signal-processing.jl")
 
 end # Module

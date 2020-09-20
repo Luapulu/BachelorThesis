@@ -41,7 +41,7 @@ end
 struct RootHitReader
     stream::IO
 end
-RootHitReader(f::AbstractString) = RootHitReader(open(f))
+RootHitReader(f::AbstractString) = RootHitReader(open(f, lock=false))
 
 Base.IteratorSize(::Type{RootHitReader}) = Base.SizeUnknown()
 
@@ -60,10 +60,18 @@ hitcount(e::RootHitReaderElType) = e[2]
 primarycount(e::RootHitReaderElType) = e[3]
 hits(e::RootHitReaderElType) = e[4]
 
-function Event{Vector{H}}(e::RootHitReaderElType) where {H}
-    Event{Vector{H}}(e[1], e[2], e[3], collect(H, e[4]))
-end
 
-## get_events ##
+## load_events ##
 
 is_root_hit_file(path::AbstractString) = occursin(r"root.hits$", path)
+
+function event_reader(path::AbstractString)
+    if is_root_hit_file(path)
+        return RootHitReader(path)
+    end
+    error("cannot read events from $path")
+end
+
+function load_events(E::Type{<:AbstractEvent}, path::AbstractString)
+    return (E(e) for e in event_reader(path))
+end
