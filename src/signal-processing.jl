@@ -1,3 +1,3 @@
-getA(signal::AbstractVector{<:Real}) = maximum(diff(signal))
+getA(signal) = maximum(diff(signal))
 
-energy(signal::AbstractVector{<:Real}) = signal[end]
+total_drift_time(signal, step_time_out=SETUP.step_time_out) = argmax(signal) * step_time_out

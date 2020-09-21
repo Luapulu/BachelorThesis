@@ -106,13 +106,3 @@ hits(e::Event) = e.hits
 hitcount(e::Event) = e.hitcount
 eventnum(e::Event) = e.eventnum
 primarycount(e::Event) = e.primarycount
-
-
-## Signal Collection ##
-
-abstract type SignalCollection end
-
-Base.IteratorSize(::Type{SignalCollection}) = Base.HasLength()
-
-Base.IteratorEltype(::Type{SignalCollection}) = Base.HasEltype()
-Base.eltype(::Type{SignalCollection}) = AbstractVector{Float32}

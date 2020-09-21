@@ -1,62 +1,97 @@
-## Generating signals for events and hits ##
+## get_signal ##
 
-function get_signal!(pulse::DenseVector{Float32}, location::NTuple{3,T} where T)
+function get_signal!(pulse::DenseVector{Float32}, location::NTuple{3})
     get_signal!(pulse, SETUP, location)
 end
 
-get_signal(location::NTuple{3,T} where T) = get_signal!(SETUP, location)
+get_signal(location::NTuple{3}) = get_signal!(SETUP, location)
 
-function get_signal!(pulse::DenseVector{Float32}, h::Hit)
-    if !outside_detector((h.x, h.y, h.z))
-        get_signal!(pulse, (h.x, h.y, h.z))
-    end
-    return pulse
-end
-
-get_signal(h::Hit) = get_signal((h.x, h.y, h.z))
-
-function get_signal!(
-    final_pulse::DenseVector{Float32},
-    working_pulse::DenseVector{Float32},
-    event::Event,
-)
-    for hit in event
-        get_signal!(working_pulse, hit)
-        final_pulse .+= (hit.E .* working_pulse)
+function get_signal!(final_pulse::DenseVector{Float32}, working_pulse::DenseVector{Float32}, event)
+    for h in hits(event)
+        if !outside_detector(location(h))
+            get_signal!(working_pulse, location(h))
+            final_pulse .+= (energy(h) .* working_pulse)
+        end
     end
     return final_pulse
 end
 
-function get_signal(e::Event, ntsteps_out=SETUP.ntsteps_out)
-    get_signal!(zeros(Float32, ntsteps_out), Vector{Float32}(undef, ntsteps_out), e)
+function get_signal(event, ntsteps_out=SETUP.ntsteps_out)
+    get_signal!(zeros(Float32, ntsteps_out), Vector{Float32}(undef, ntsteps_out), event)
 end
 
-## Generating signals for multiple events ##
+
+## SignalCollection ##
+
+abstract type SignalCollection end
+
+Base.IteratorSize(::Type{SignalCollection}) = Base.HasLength()
+Base.length(S::SignalCollection) = length(signals(S))
+
+Base.IteratorEltype(::Type{SignalCollection}) = Base.HasEltype()
+Base.eltype(::Type{SignalCollection}) = AbstractVector{Float32}
+
+Base.iterate(S::SignalCollection) = iterate(signals(S))
+Base.iterate(S::SignalCollection, state) = iterate(signals(S), state)
+
+
+## SignalDict ##
+
+struct SignalDict <: SignalCollection
+    signals::Dict{Int,Vector{Float32}}
+end
+SignalDict() = SignalDict(Dict())
+
+Base.eltype(::Type{SignalDict}) = Vector{Float32}
+
+Base.keys(S::SignalDict) = keys(S.signals)
+
+Base.getindex(S::SignalDict, i::Integer) = get(S.signals, i, missing)
+Base.getindex(S::SignalDict, e) = getindex(S, eventnum(e))
+
+Base.setindex!(S::SignalDict, signal::Vector{Float32}, i::Integer) = setindex!(S.signals, signal, i)
+Base.setindex!(S::SignalDict, signal::Vector{Float32}, e) = setindex!(S, signal, eventnum(e))
+
+signals(S::SignalDict) = values(S.signals)
+
+function save(path::AbstractString, S::SignalDict)
+    mat = Matrix{Float32}(undef, SETUP.ntsteps_out, length(S))
+    for (i, s) in enumerate(signals(S))
+        mat[:, i] .= s
+    end
+    save(path, "signals", (collect(keys(S)), mat))
+end
+
+function load_signals(S::Type{SignalDict}, path::AbstractString)
+    ks, mat = load(path, "signals")
+    return S(Dict(zip(ks, eachcol(mat))))
+end
+
+
+## get_signals ##
 
 function get_signals!(
-    signals::Vector{Union{Missing,Vector{Float32}}},
-    events::AbstractVector{Event},
-    ntsteps_out::Integer = SETUP.ntsteps_out,
-    working_pulse::DenseVector{Float32} = Vector{Float32}(undef, ntsteps_out);
+    signals,
+    events,
+    working_pulse::DenseVector{Float32} = Vector{Float32}(undef,  SETUP.ntsteps_out),
+    ntsteps_out::Integer = SETUP.ntsteps_out;
     replace::Bool = false,
 )
     siggen_count = 0
     for (i, e) in enumerate(events)
-        if ismissing(signals[e.fileindex]) || replace
-            signals[e.fileindex] = get_signal!(zeros(Float32, ntsteps_out), working_pulse, e)
+        if ismissing(signals[e])
+            signals[e] = get_signal!(zeros(Float32, ntsteps_out), working_pulse, e)
+            siggen_count += 1
+        elseif replace
+            signals[e] .= 0
+            get_signal!(signals[e], working_pulse, e)
             siggen_count += 1
         end
     end
-    @info "Worker $(myid()) got $(length(events)) of $(length(signals)) events and generated $(siggen_count) signals"
+    @info "Worker $(myid()) got $(length(events)) events and generated $(siggen_count) signals"
     return signals
 end
 
-function get_signals(events::Vector{Event}, l::Integer)
-    signals = Vector{Union{Missing,Vector{Float32}}}(missing, l)
-    return get_signals!(signals, events)
+function get_signals(S::Type{<:SignalCollection}, events)
+    return get_signals!(S(), events)
 end
-
-save(path::AbstractString, signals::Vector{Union{Missing,Vector{Float32}}}) =
-    save(path, "signals", signals)
-
-get_signals(path::AbstractString) = load(path, "signals")
