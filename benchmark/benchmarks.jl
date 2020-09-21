@@ -1,4 +1,5 @@
 using BenchmarkTools, Profile, Random
+using Parsers
 
 # dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "test"))
 # jldpath1 = joinpath(dir, "GWD6022_Co56_side50cm_1001.jld2")
@@ -63,6 +64,21 @@ function parse_hit2!(stream::IO)
     return HitTuple((x, y, z, E, t, particleid, trackid, trackparentid))
 end
 
+function parse_hit3!(stream::IO)
+    y = Parsers.parse(Float32, readuntil(stream, ' '))
+    z = Parsers.parse(Float32, readuntil(stream, ' '))
+    x = Parsers.parse(Float32, readuntil(stream, ' '))
+    E = Parsers.parse(Float32, readuntil(stream, ' '))
+    t = Parsers.parse(Float32, readuntil(stream, ' '))
+    particleid = Parsers.parse(Int32, readuntil(stream, ' '))
+    trackid = Parsers.parse(Int32, readuntil(stream, ' '))
+    trackparentid = Parsers.parse(Int32, readuntil(stream, ' '))
+
+    skip(stream, 9)
+
+    return HitTuple((x, y, z, E, t, particleid, trackid, trackparentid))
+end
+
 ranges = Vector{UnitRange{Int32}}(undef, 8)
 
 str = "1.60738 -2.07026 -201.594 0.1638 0 22 187 4 physiDet\n1.91771 -2.52883 -201.842 0.24458 0 22 187 4 physiDet"
@@ -74,15 +90,24 @@ function func1(ranges, str)
     nothing
 end
 
-function func2(ranges, str)
+function func2(str)
     io = IOBuffer(str)
     parse_hit2!(io)
     parse_hit2!(io)
     nothing
 end
 
-b1 = @benchmark func1($ranges, $str)
-b2 = @benchmark func2($ranges, $str)
+function func3(str)
+    io = IOBuffer(str)
+    parse_hit3!(io)
+    parse_hit3!(io)
+    nothing
+end
 
-display(b1)
-display(b2)
+b1 = @benchmark func1($ranges, $str)
+b2 = @benchmark func2($str)
+b3 = @benchmark func3($str)
+
+display(minimum(b1))
+display(minimum(b2))
+display(minimum(b3))
