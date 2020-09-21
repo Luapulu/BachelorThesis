@@ -1,19 +1,19 @@
 function parse_meta(stream::IO)
-    eventnum = parse(Int64, readuntil(stream, ' '))
-    hitcount = parse(Int64, readuntil(stream, ' '))
-    primarycount = parse(Int64, readuntil(stream, '\n'))
+    eventnum = Parsers.parse(Int64, readuntil(stream, ' '))
+    hitcount = Parsers.parse(Int64, readuntil(stream, ' '))
+    primarycount = Parsers.parse(Int64, readuntil(stream, '\n'))
     return eventnum, hitcount, primarycount
 end
 
 function parse_hit(stream::IO)
-    x = parse(Float64, readuntil(stream, ' '))
-    y = parse(Float64, readuntil(stream, ' '))
-    z = parse(Float64, readuntil(stream, ' '))
-    E = parse(Float64, readuntil(stream, ' '))
-    t = parse(Float64, readuntil(stream, ' '))
-    particleid = parse(Int64, readuntil(stream, ' '))
-    trackid = parse(Int64, readuntil(stream, ' '))
-    trackparentid = parse(Int64, readuntil(stream, ' '))
+    x = Parsers.parse(Float64, readuntil(stream, ' '))
+    y = Parsers.parse(Float64, readuntil(stream, ' '))
+    z = Parsers.parse(Float64, readuntil(stream, ' '))
+    E = Parsers.parse(Float64, readuntil(stream, ' '))
+    t = Parsers.parse(Float64, readuntil(stream, ' '))
+    particleid = Parsers.parse(Int64, readuntil(stream, ' '))
+    trackid = Parsers.parse(Int64, readuntil(stream, ' '))
+    trackparentid = Parsers.parse(Int64, readuntil(stream, ' '))
 
     skip(stream, 9)
 

@@ -1,4 +1,4 @@
-using Test, MaGeSigGen, MJDSigGen, Statistics
+using Test, MaGeSigGen, MJDSigGen, Statistics, Parsers
 
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "test"))
 
@@ -124,8 +124,8 @@ end
     badpath = joinpath(dir, "badfile.root.hits")
     badreader = MaGeSigGen.RootHitReader(badpath)
     e, _ = iterate(badreader)
-    @test_throws ArgumentError Event{Vector{Hit}}(e)
-    @test_throws ArgumentError iterate(badreader)
+    @test_throws Parsers.Error Event{Vector{Hit}}(e)
+    @test_throws Parsers.Error iterate(badreader)
 end
 
 
