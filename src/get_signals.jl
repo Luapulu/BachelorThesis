@@ -78,6 +78,7 @@ function get_signals!(
     replace::Bool = false,
 )
     siggen_count = 0
+    event_count = 0
     for (i, e) in enumerate(events)
         if ismissing(signals[e])
             signals[e] = get_signal!(zeros(Float32, ntsteps_out), working_pulse, e)
@@ -87,8 +88,9 @@ function get_signals!(
             get_signal!(signals[e], working_pulse, e)
             siggen_count += 1
         end
+        event_count += 1
     end
-    @info "Worker $(myid()) got $(length(events)) events and generated $(siggen_count) signals"
+    @info "Worker $(myid()) got $(event_count) events and generated $(siggen_count) signals"
     return signals
 end
 
