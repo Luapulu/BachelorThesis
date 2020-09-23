@@ -10,7 +10,7 @@ dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-16-big-si
 
 configpath = joinpath(dir, "GWD6022_01ns.config")
 fieldgen(configpath)
-@everywhere init_detector($configpath)
+@everywhere init_setup($configpath)
 
 event_dir = ???
 event_paths = filter(p -> occursin(r".root.hits$", p), readdir(event_dir, join=true))

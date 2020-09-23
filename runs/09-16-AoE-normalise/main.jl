@@ -9,7 +9,7 @@ nprocs() <= worker_num && addprocs(1 + worker_num - nprocs())
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-16-AoE-normalise"))
 
 configpath = joinpath(dir, "GWD6022_01ns.config")
-@everywhere init_detector($configpath)
+@everywhere init_setup($configpath)
 
 @everywhere function event_filter(e::MaGeEvent)
     regions = [

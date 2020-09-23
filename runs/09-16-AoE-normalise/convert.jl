@@ -8,7 +8,7 @@ nworkers() < 12 && addprocs(13 - nworkers())
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-16-AoE-normalise"))
 
 configpath = realpath(joinpath(dir, "GWD6022_01ns.config"))
-@everywhere init_detector($configpath)
+@everywhere init_setup($configpath)
 
 event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
 

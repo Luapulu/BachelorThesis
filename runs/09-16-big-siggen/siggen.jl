@@ -10,7 +10,7 @@ dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-16-big-si
 event_dir = joinpath(dir, "events")
 
 configpath = joinpath(dir, "GWD6022_01ns.config")
-@everywhere init_detector($configpath)
+@everywhere init_setup($configpath)
 
 !isdir(joinpath(dir, "signals")) && mkdir(joinpath(dir, "signals"))
 
