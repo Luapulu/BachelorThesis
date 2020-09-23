@@ -2,7 +2,7 @@ using Distributed
 worker_num = 16
 nprocs() <= worker_num && addprocs(1 + worker_num - nprocs())
 
-@everywhere import Pkg; Pkg.activate(".")
+@everywhere import Pkg; Pkg.activate("."); Pkg.instantiate()
 @everywhere using MaGeSigGen
 
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-23-siggen2"))
