@@ -1,10 +1,10 @@
 ## get_signal ##
 
 function get_signal!(pulse::DenseVector{Float32}, location::NTuple{3})
-    get_signal!(pulse, SETUP, location)
+    return get_signal!(pulse, setup(), location)
 end
 
-get_signal(location::NTuple{3}) = get_signal!(SETUP, location)
+get_signal(location::NTuple{3}) = get_signal!(setup(), location)
 
 function get_signal!(final_pulse::DenseVector{Float32}, working_pulse::DenseVector{Float32}, event)
     for h in hits(event)
@@ -16,7 +16,7 @@ function get_signal!(final_pulse::DenseVector{Float32}, working_pulse::DenseVect
     return final_pulse
 end
 
-function get_signal(event, ntsteps_out=SETUP.ntsteps_out)
+function get_signal(event, ntsteps_out=setup().ntsteps_out)
     get_signal!(zeros(Float32, ntsteps_out), Vector{Float32}(undef, ntsteps_out), event)
 end
 
@@ -54,8 +54,8 @@ Base.setindex!(S::SignalDict, signal::Vector{Float32}, e) = setindex!(S, signal,
 
 signals(S::SignalDict) = values(S.signals)
 
-function save(path::AbstractString, S::SignalDict)
-    mat = Matrix{Float32}(undef, SETUP.ntsteps_out, length(S))
+function save(path::AbstractString, S::SignalDict, ntsteps_out=setup().ntsteps_out)
+    mat = Matrix{Float32}(undef, ntsteps_out, length(S))
     for (i, s) in enumerate(signals(S))
         mat[:, i] .= s
     end
@@ -73,8 +73,8 @@ end
 function get_signals!(
     signals,
     events,
-    working_pulse::DenseVector{Float32} = Vector{Float32}(undef,  SETUP.ntsteps_out),
-    ntsteps_out::Integer = SETUP.ntsteps_out;
+    working_pulse::DenseVector{Float32} = Vector{Float32}(undef,  setup().ntsteps_out),
+    ntsteps_out::Integer = setup().ntsteps_out;
     replace::Bool = false,
 )
     siggen_count = 0
