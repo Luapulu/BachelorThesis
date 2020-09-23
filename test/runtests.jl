@@ -1,21 +1,42 @@
-using Test, MaGeSigGen, MJDSigGen, Statistics, Parsers
+using Test, MaGeSigGen, MJDSigGen, Parsers, Statistics
 
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "test"))
 
 
-@testset "Detector" begin
+@testset "Detector Setup" begin
     configpath = joinpath(dir, "GWD6022_01ns.config")
-    @test_logs (:info, "Initialised detector setup with $configpath") init_detector(configpath)
+    @test_logs (:info, "Initialised detector setup with $configpath") init_setup(configpath)
 
-    @test_throws ErrorException init_detector(configpath)
+    @test_throws ErrorException init_setup(configpath)
 
     @test isa(MaGeSigGen.SETUP, MJDSigGen.Struct_MJD_Siggen_Setup)
+
+    @test setup() == MaGeSigGen.SETUP
+
+    out = with_group_effects(5.7, 3.1, "some other argument") do arg
+        return (
+            setup().energy,
+            setup().charge_cloud_size,
+            setup().use_diffusion,
+            setup().use_acceleration,
+            setup().use_repulsion,
+            arg
+        )
+    end
+
+    @test all(out .== (5.7f0, 3.1f0, 1, 1, 1, "some other argument"))
+
+    @test setup().charge_cloud_size == 0
+    @test setup().energy == 0
+    @test setup().use_diffusion == 0
+    @test setup().use_acceleration == 0
+    @test setup().use_repulsion == 0
 
     @test outside_detector((10, 10, 10)) == false
     @test outside_detector((-10, 0, -10)) == true
 
     x, y, z = (1.0, 2.0, 3.0)
-    @test MaGeSigGen.to_detector_coords(x, y, z) == ((z + 200) * 10, x * 10, -10 * y + 65 / 2)
+    @test MaGeSigGen.to_detector_coords(x, y, z) == ((z + 200) * 10, x * 10, -10 * y + setup().xtal_length / 2)
 end
 
 
@@ -144,7 +165,7 @@ end
 
         testsignal = get_signal(testevent)
 
-        @test length(testsignal) == MaGeSigGen.SETUP.ntsteps_out == 4000
+        @test length(testsignal) == setup().ntsteps_out == 4000
 
         @test all(0 .<= testsignal .< energy(testevent) * (1 + 1e-6))
 
@@ -199,9 +220,44 @@ end
 
     @testset "Signal processing" begin
         s = Float32[0.0, 0.2, 0.6, 1.4, 1.8, 2.0, 2.0, 2.0]
+        time_step = 5
 
         @test getA(s) == maximum(diff(s)) ≈ 0.8
 
-        @test total_drift_time(s, 5) == 30
+        @test drift_time(s, 0.6f0, 1.8f0, step_time_out = 5) == 2 * time_step
+
+        @test drift_time(s, -Inf, Inf, step_time_out = 5) == length(s) * time_step
+        @test drift_time(s, step_time_out = 5) == length(s) * time_step
+
+        @test charge_cloud_size(0.005) == 0.01
+
+        @test charge_cloud_size(1234.5) ≈ 0.37973124300111993
+
+        σ = 11.3
+        win = [exp(-0.5 * (x / σ)^2) for x in LinRange(-4σ, 4σ, round(Int, 8 * σ / time_step))]
+        @test all(MaGeSigGen.gausswindow(σ, 4, step_time_out=time_step) .≈ win)
+
+        eventpath = joinpath(dir, "events", "GWD6022_Co56_side50cm_1001.root.hits")
+        loader = load_events(Event{Vector{Hit}}, eventpath)
+        e = first(loader)
+
+        sgnl = get_signal(e)
+        sgnl ./= sgnl[end]
+
+        δτ = with_group_effects(energy(e), charge_cloud_size(energy(e)), first(hits(e))) do h
+            getδτ(location(h))
+        end
+
+        grp_sgnl = apply_group_effects(sgnl, δτ, true)
+        grp_sgnl ./= grp_sgnl[end]
+
+        # test group effects
+
+        E = 1234.5
+        σE = 67.8
+        Es = [set_noisy_energy!(sgnl, E, σE)[end] for _ in 1:1000]
+
+        @test E - σE < mean(Es) < E + σE
+        @test 0.9 * σE < std(Es) < 1.1 * σE
     end
 end
