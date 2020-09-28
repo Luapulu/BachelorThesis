@@ -42,7 +42,7 @@ pmap(event_paths) do epath
     @info "Worker $(myid()) working on $(splitdir(epath)[end])"
 
     MaGe.loadstreaming(epath) do stream
-        save_path = joinpath(dir, "signals", split(splitdir(path)[end], '.')[1] * "_signals.jld")
+        save_path = joinpath(dir, "signals", split(splitdir(epath)[end], '.')[1] * "_signals.jld")
         sgnls = load_signals(SignalDict(), save_path)
 
         for event in stream
