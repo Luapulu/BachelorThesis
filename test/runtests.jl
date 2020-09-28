@@ -1,4 +1,4 @@
-using Test, MaGeSigGen, MJDSigGen, MaGe, Statistics
+using Test, MaGeSigGen, MJDSigGen, MaGe, Statistics, DSP
 
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "test"))
 setup_path = joinpath(dir, "GWD6022_01ns.config")
@@ -121,12 +121,11 @@ end
 
         @test charge_cloud_size(1234.5) ≈ 0.37973124300111993
 
-        σ = 11.3
+        σ = time_step / (2 * √(2 * log(2)))
         win = [exp(-0.5 * (x / σ)^2) for x in LinRange(-4σ, 4σ, round(Int, 8 * σ / time_step))]
         @test all(MaGeSigGen.gausswindow(σ, 4, time_step) .≈ win)
 
         l = (10, 10, 10)
-
         @test with_group_effects!(setup, 1234.5, charge_cloud_size(1234.5), l) do stp, loc
             getδτ(stp, loc)
         end == 26.61690290683232610
@@ -134,8 +133,13 @@ end
         gs = apply_group_effects(s, time_step, time_step, true)
         gs ./= gs[end]
 
+        pad_s = [s; 2.0; 2.0]
+        expected = conv(pad_s, win)[1:end-2]
+        expected ./= expected[end]
+
         @test all(-1e-10 .< gs .< (1 + 1e-10))
         @test all(-1e-10 .< diff(gs))
+        @test gs ≈ expected
         @test length(gs) == 8 + 3 - 1
 
         E = 1234.5
