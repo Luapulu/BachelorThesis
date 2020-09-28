@@ -31,7 +31,7 @@ function getrawsignals(filenum)
     path = get_eventpath(filenum)
     @info "Working on $(splitdir(path)[end])"
 
-    MaGe.loadstreaming(path) do stream
+    signals = MaGe.loadstreaming(path) do stream
         sgnls = SignalDict()
 
         for event in stream
@@ -40,13 +40,14 @@ function getrawsignals(filenum)
                 sgnls[event] = get_signal(setup, event)
             end
         end
-
-        save_path = joinpath(dir, "signals", split(splitdir(path)[end], '.')[1] * "_signals.jld")
-
-        save(save_path, sgnls)
-
-        @info "Saved signals to $(splitdir(save_path)[end])"
+        return sgnls
     end
+
+    save_path = joinpath(dir, "signals", split(splitdir(path)[end], '.')[1] * "_signals.jld")
+
+    save(save_path, signals)
+
+    @info "Saved signals to $(splitdir(save_path)[end])"
 
     nothing
 end
