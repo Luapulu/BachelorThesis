@@ -46,7 +46,7 @@ pmap(event_paths) do epath
         sgnls = load_signals(SignalDict, save_path)
 
         for event in stream
-            if event_filter(event)
+            if event_filter(event) && ismissing(sgnls[event])
                 todetcoords!(event, setup)
                 sgnls[event] = get_signal(setup, event)
             end
