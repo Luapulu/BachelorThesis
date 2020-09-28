@@ -45,12 +45,10 @@ pmap(event_paths) do epath
         save_path = joinpath(dir, "signals", split(splitdir(epath)[end], '.')[1] * "_signals.jld")
         sgnls = load_signals(SignalDict, save_path)
 
-        let setup = setup
-            for event in stream
-                if event_filter(event)
-                    todetcoords!(event, setup)
-                    sgnls[event] = get_signal(setup, event)
-                end
+        for event in stream
+            if event_filter(event)
+                todetcoords!(event, setup)
+                sgnls[event] = get_signal(setup, event)
             end
         end
 
