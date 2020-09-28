@@ -38,7 +38,7 @@ function getrawsignals(filenum)
 
         for event in stream
             if event_filter(event)
-                todetcoords!(event)
+                todetcoords!(event, setup)
                 sgnls[event] = get_signal(setup, event)
             end
         end
