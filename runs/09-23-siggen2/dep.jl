@@ -27,7 +27,7 @@ dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-23-siggen
 
 @everywhere function event_filter(e)
     E = energy(e)
-    incmptn = any(compton_regions .- 10 .< E .< compton_regions .+ 10)
+    incmptn = any(compton_regions .- 20 .< E .< compton_regions .+ 20)
     indep = any(dep_regions .- 3 .< E .< dep_regions .+ 3)
     return incmptn || indep
 end
