@@ -1,7 +1,7 @@
 using MaGeSigGen, MJDSigGen
 
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-24-big_siggen2"))
-event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
+const event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
 
 setup_path = joinpath(dir, "GWD6022_01ns.config")
 const setup = MJDSigGen.signal_calc_init(setup_path)
@@ -24,7 +24,7 @@ end
 
 function get_eventpath(i)
     event_paths = sort(filter(p -> occursin(r".root.hits$", p), readdir(event_dir, join=true)))
-    return eventpaths[i]
+    return event_paths[i]
 end
 
 function getrawsignals(filenum)
