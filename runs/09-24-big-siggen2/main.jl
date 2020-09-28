@@ -1,7 +1,9 @@
-using MaGeSigGen, MJDSigGen
+using MaGeSigGen, MJDSigGen, Mage
 
 dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-24-big_siggen2"))
 const event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
+
+isdir(joinpath(dir, "signals")) || mkdir(joinpath(dir, "signals"))
 
 setup_path = joinpath(dir, "GWD6022_01ns.config")
 const setup = MJDSigGen.signal_calc_init(setup_path)
@@ -40,6 +42,7 @@ function getrawsignals(filenum)
                 sgnls[event] = get_signal(setup, event)
             end
         end
+
         return sgnls
     end
 
