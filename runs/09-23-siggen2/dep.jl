@@ -33,7 +33,7 @@ dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-23-siggen
 end
 
 setup_path = joinpath(dir, "GWD6022_01ns.config")
-@everywhere signal_calc_init($setup_path)
+@everywhere setup = signal_calc_init($setup_path)
 
 event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
 event_paths = filter(p -> occursin(r".root.hits$", p), readdir(event_dir, join=true))
@@ -47,7 +47,7 @@ pmap(event_paths) do epath
 
         for event in stream
             if event_filter(event)
-                todetcoords!(event)
+                todetcoords!(event, setup)
                 sgnls[event] = get_signal(setup, event)
             end
         end
