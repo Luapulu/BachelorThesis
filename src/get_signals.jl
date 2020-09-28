@@ -1,23 +1,26 @@
 ## get_signal ##
 
-function get_signal!(pulse::DenseVector{Float32}, location::NTuple{3})
-    return get_signal!(pulse, setup(), location)
-end
-
-get_signal(location::NTuple{3}) = get_signal!(setup(), location)
-
-function get_signal!(final_pulse::DenseVector{Float32}, working_pulse::DenseVector{Float32}, event)
+function get_signal!(
+    final_pulse::DenseVector{Float32},
+    working_pulse::DenseVector{Float32},
+    stp::SigGenSetup,
+    event::MaGe.AbstractEvent,
+)
     for h in hits(event)
-        if !outside_detector(location(h))
-            get_signal!(working_pulse, location(h))
-            final_pulse .+= (energy(h) .* working_pulse)
+        if !outside_detector(stp, location(h))
+            get_signal!(working_pulse, stp, location(h))
+            final_pulse .+= energy(h) .* working_pulse
         end
     end
     return final_pulse
 end
 
-function get_signal(event, ntsteps_out=setup().ntsteps_out)
-    get_signal!(zeros(Float32, ntsteps_out), Vector{Float32}(undef, ntsteps_out), event)
+function get_signal(stp::SigGenSetup, event)
+    return get_signal!(
+        zeros(Float32, stp.ntsteps_out),
+        Vector{Float32}(undef, stp.ntsteps_out),
+         stp, event
+    )
 end
 
 
@@ -54,8 +57,8 @@ Base.setindex!(S::SignalDict, signal::Vector{Float32}, e) = setindex!(S, signal,
 
 signals(S::SignalDict) = values(S.signals)
 
-function save(path::AbstractString, S::SignalDict, ntsteps_out=setup().ntsteps_out)
-    mat = Matrix{Float32}(undef, ntsteps_out, length(S))
+function save(path::AbstractString, S::SignalDict)
+    mat = Matrix{Float32}(undef, length(first(S)), length(S))
     for (i, s) in enumerate(signals(S))
         mat[:, i] .= s
     end
@@ -72,20 +75,21 @@ end
 
 function get_signals!(
     signals,
-    events,
-    working_pulse::DenseVector{Float32} = Vector{Float32}(undef,  setup().ntsteps_out),
-    ntsteps_out::Integer = setup().ntsteps_out;
+    stp::SigGenSetup,
+    events;
     replace::Bool = false,
 )
     siggen_count = 0
     event_count = 0
+    working_pulse = Vector{Float32}(undef, stp.ntsteps_out)
+
     for (i, e) in enumerate(events)
         if ismissing(signals[e])
-            signals[e] = get_signal!(zeros(Float32, ntsteps_out), working_pulse, e)
+            signals[e] = get_signal!(zeros(Float32, stp.ntsteps_out), working_pulse, stp, e)
             siggen_count += 1
         elseif replace
             signals[e] .= 0
-            get_signal!(signals[e], working_pulse, e)
+            get_signal!(signals[e], working_pulse, stp, e)
             siggen_count += 1
         end
         event_count += 1
@@ -94,6 +98,6 @@ function get_signals!(
     return signals
 end
 
-function get_signals(S::Type{<:SignalCollection}, events)
-    return get_signals!(S(), events)
+function get_signals(S::Type{<:SignalCollection}, stp, events)
+    return get_signals!(S(), stp, events)
 end

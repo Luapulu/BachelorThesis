@@ -11,44 +11,39 @@ function group_effects_off!(stp::SigGenSetup)
 	return stp
 end
 
-function init_setup(setup_path)
-    global SETUP
-    if !isdefined(MaGeSigGen, :SETUP)
-        mktemp() do path, io
-            redirect_stdout(io) do
-                SETUP = group_effects_off!(signal_calc_init(setup_path))
-                Base.Libc.flush_cstdio()
-            end
-        end
-    else
-        error("cannot redefine detector setup")
-    end
-
-    @info "Initialised detector setup with $setup_path"
-    return nothing
-end
-
-setup() = SETUP::SigGenSetup
-
-function with_group_effects(f::Function, E::Real, ch_cld_size::Real, args...; kwargs...)
+function with_group_effects!(
+	f::Function, stp::SigGenSetup, E::Real,
+	ch_cld_size::Real, args...; kwargs...
+)
 	try
-		setup().energy = E
-		setup().charge_cloud_size = ch_cld_size
-		setup().use_diffusion = 1
-		setup().use_acceleration = 1
-		setup().use_repulsion = 1
+		stp.energy = E
+		stp.charge_cloud_size = ch_cld_size
+		stp.use_diffusion = 1
+		stp.use_acceleration = 1
+		stp.use_repulsion = 1
 
-		return f(args...; kwargs...)
+		return f(stp, args...; kwargs...)
 	finally
-		group_effects_off!(setup())
+		group_effects_off!(stp)
 	end
 end
 
-function outside_detector(location::NTuple{3, T})  where {T}
-	outside_detector(setup(), location)
+"""Convert to detector coordinates [mm]"""
+function todetcoords(x::Real, y::Real, z::Real, xtal_length::Real)
+    return 10(z + 200), 10x, -10y + 0.5xtal_length
 end
 
-"""Convert to detector coordinates [mm]"""
-function to_detector_coords(x::Real, y::Real, z::Real; xtal_length::Real = setup().xtal_length)
-    return 10(z + 200), 10x, -10y + 0.5xtal_length
+todetcoords(x::Real, y::Real, z::Real, stp::SigGenSetup) =
+	todetcoords(x, y, z, stp.xtal_length)
+
+function todetcoords(h::Hit, stp::SigGenSetup)
+	x, y, z = todetcoords(location(h)..., stp)
+	return Hit(x, y, z, energy(h), time(h), particleid(h), trackid(h), trackparentid(h))
+end
+
+function todetcoords!(e::Event{Vector{Hit}}, stp::SigGenSetup)
+	for i in 1:length(e)
+		hits(e)[i] = todetcoords(hits(e)[i], stp)
+	end
+	return e
 end
