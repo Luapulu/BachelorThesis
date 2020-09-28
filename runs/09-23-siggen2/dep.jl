@@ -44,11 +44,15 @@ pmap(event_paths) do epath
     MaGe.loadstreaming(epath) do stream
         save_path = joinpath(dir, "signals", split(splitdir(epath)[end], '.')[1] * "_signals.jld")
         sgnls = load_signals(SignalDict, save_path)
+        siggen_count = 0
 
         for event in stream
             if event_filter(event) && ismissing(sgnls[event])
                 todetcoords!(event, setup)
                 sgnls[event] = get_signal(setup, event)
+
+                siggen_count += 1
+                siggen_count % 200 == 0 && @info "Generated $siggen_count signals"
             end
         end
 
