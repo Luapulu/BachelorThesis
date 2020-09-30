@@ -15,11 +15,13 @@ export with_group_effects!, todetcoords, todetcoords!
 export SignalDict, signals, get_signal, get_signal!, get_signals, get_signals!, save, load_signals
 
 # Signal processing
-export getA, drift_time, charge_cloud_size, getδτ, apply_group_effects, set_noisy_energy!
+export getA, drift_time, charge_cloud_size, getδτ, apply_group_effects, set_noisy_energy!,
+    addnoise!, appendrawAoEhist!, apply_electronics
 
 
 include("setup.jl")
 include("get_signals.jl")
 include("signal-processing.jl")
+include("analysis.jl")
 
 end # Module
