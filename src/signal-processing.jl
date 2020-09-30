@@ -74,6 +74,7 @@ function apply_group_effects(
     end
 end
 
+
 function moving_average!(out, signal, width::Integer)
 	length(out) == length(signal) || error("ouptut vector must have same length as input vector")
 
@@ -115,9 +116,71 @@ function moving_average(signal, width::Integer, n::Integer)
 	moving_average!(similar(signal), copy(signal), width, n)
 end
 
-function apply_electronics(signal) end
+
+function apply_electronics(pulse; GBP = 150e+06, Cd = 3.5e-12, Ts = 1e-9, tau = 65e-6, Kv = 0.5e6, Cf = 0.65e-12, Rf = 2e7)
+    wop = GBP / (2 * pi * Kv)
+    Cmod = Cf + Cd
+    wmod = 1.0 / (Rf * Cmod)
+    alfa = Cmod / (Cf * GBP)
+
+    b0 = 1.0 / alfa
+    a2 = 1.0
+    a1 = 1.0 / alfa + wop + wmod
+    a0 = 1.0 / (tau * alfa) + wmod*wop
+
+    # then the transfer function in the *Laplace* s-domain looks like this:
+    #                       b0
+    #   T(s) = ----------------------------
+    #             a2 * s^2 + a1 * s + a0
+
+    # PolynomialRatio needs z-transform paramters: s- and z-domains can be connected by
+    # the bilinear transform:
+    #        z - 1
+    # s = K -------- , K = Ts/2  , Ts - sampling period
+    #        z + 1
+    #
+    # we can then convert T(s) to T(z):
+    #              bz2 * z^2 + bz1 * z + bz0
+    #   T(z) = -------------------------------
+    #              az2 * z^2 + az1 * z + az0
+    #
+
+    K = 2/Ts
+
+    az2 = 1.0   # normalized
+    az1 = (2*a0 - 2*K^2)/(K^2 + a1*K + a0)
+    az0 = (K^2 - a1*K + a0)/(K^2 + a1*K + a0)
+
+    bz2 = b0/(K^2 + a1*K + a0)
+    bz1 = 2*b0/(K^2 + a1*K + a0)
+    bz0 = b0/(K^2 + a1*K + a0)
+
+    myfilter = PolynomialRatio([bz2, bz1, bz0], [az2, az1, az0])
+
+    filtered = filt(myfilter, vcat([0], diff(pulse)))
+end
 
 function set_noisy_energy!(signal, E, σE)
     signal .*= rand(Normal(E, σE)) / signal[end]
+    return signal
+end
+
+
+function addnoise!(signal, noise, noise_index)
+    i = 1
+    j = noise_index
+
+    nl = length(noise)
+    sl = length(signal)
+
+    while sl - i > nl - j
+        signal[i:i + nl - j] .+= noise[j:end]
+
+        i += nl - j + 1
+        j = 1
+    end
+
+    signal[i:end] .+= noise[j:j + sl - i]
+
     return signal
 end
