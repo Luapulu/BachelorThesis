@@ -166,7 +166,7 @@ function set_noisy_energy!(signal, E, σE)
 end
 
 
-function addnoise!(signal, noise, noise_index)
+function addnoise!(signal, noise, noise_index=rand(1:length(noise)))
     i = 1
     j = noise_index
 
