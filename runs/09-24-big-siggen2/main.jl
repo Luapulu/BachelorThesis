@@ -1,7 +1,7 @@
-using MaGeSigGen, MJDSigGen, Mage
+using MaGeSigGen, MJDSigGen, MaGe
 
-dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-24-big_siggen2"))
-const event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
+const dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-24-big_siggen2"))
+const event_dir = "/lfs/l3/gerda/ga53sog/Montecarlo/results/GWD6022_Co56_side50cm/DM/"
 
 isdir(joinpath(dir, "signals")) || mkdir(joinpath(dir, "signals"))
 
@@ -33,24 +33,19 @@ function getrawsignals(filenum)
     path = get_eventpath(filenum)
     @info "Working on $(splitdir(path)[end])"
 
-    signals = MaGe.loadstreaming(path) do stream
-        sgnls = SignalDict()
-
-        for event in stream
-            if event_filter(event)
-                todetcoords!(event, setup)
-                sgnls[event] = get_signal(setup, event)
-            end
-        end
-
-        return sgnls
-    end
+    sgnls = get_signals(SignalDict, setup, MaGe.loadstreaming(path))
 
     save_path = joinpath(dir, "signals", split(splitdir(path)[end], '.')[1] * "_signals.jld")
 
-    save(save_path, signals)
+    save(save_path, sgnls)
 
     @info "Saved signals to $(splitdir(save_path)[end])"
 
     nothing
+end
+
+function getrawsignals(firstnum, lastnum)
+    for num in firstnum:lastnum
+        getrawsignals(num)
+    end
 end
