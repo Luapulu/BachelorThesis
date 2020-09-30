@@ -157,5 +157,12 @@ end
         smooth2 = MaGeSigGen.moving_average(smooth2, 2)
         smooth2 = MaGeSigGen.moving_average(smooth2, 2)
         @test isapprox(MaGeSigGen.moving_average(s, 2, 3), smooth2, rtol=1e-6)
+
+        s3 = copy(s)
+        noisy_signal = Float32[
+            0.0f0 - 0.1, 0.2f0 + 0.2, 0.6f0 - 0.2,
+            1.4f0 + 0.1, 1.8f0 - 0.1, 2.0f0 + 0.2,
+            2.0f0 - 0.2, 2.0f0 + 0.1]
+        @test addnoise!(s3, [0.1, -0.1, 0.2, -0.2], 2) == noisy_signal
     end
 end
