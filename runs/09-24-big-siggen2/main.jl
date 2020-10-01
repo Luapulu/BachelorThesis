@@ -30,7 +30,8 @@ function getrawsignals(filenum)
     path = joinpath(event_dir, event_paths[filenum])
     @info "Working on $(splitdir(path)[end])"
 
-    events = (todetcoords!(e) for e in MaGe.loadstreaming(path))
+    filtered_events = Iterators.filter(event_filter, MaGe.loadstreaming(path))
+    events = (todetcoords!(e, setup) for e in filtered_events)
 
     sgnls = get_signals(SignalDict, setup, events)
 
