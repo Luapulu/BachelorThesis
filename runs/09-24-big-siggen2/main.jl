@@ -27,10 +27,12 @@ end
 const event_paths = sort(filter(p -> occursin(r".root.hits$", p), readdir(event_dir)))
 
 function getrawsignals(filenum)
-    path = abspatch(event_paths[filenum])
+    path = joinpath(event_dir, event_paths[filenum])
     @info "Working on $(splitdir(path)[end])"
 
-    sgnls = get_signals(SignalDict, setup, MaGe.loadstreaming(path))
+    events = (todetcoords!(e) for e in MaGe.loadstreaming(path))
+
+    sgnls = get_signals(SignalDict, setup, events)
 
     save_path = joinpath(dir, "signals", split(splitdir(path)[end], '.')[1] * "_signals.jld")
 
