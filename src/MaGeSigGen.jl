@@ -15,7 +15,7 @@ export with_group_effects!, todetcoords, todetcoords!
 export SignalDict, signals, get_signal, get_signal!, get_signals, get_signals!, save, load_signals
 
 # Signal processing
-export getA, drift_time, charge_cloud_size, getδτ, apply_group_effects, set_noisy_energy!,
+export getA, drift_time, charge_cloud_size, getδτ, apply_group_effects, get_noisy_energy,
     moving_average, moving_average!, addnoise!, appendrawAoEhist!, apply_electronics
 
 

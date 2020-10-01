@@ -144,8 +144,7 @@ end
 
         E = 1234.5
         σE = 67.8
-        s2 = copy(s)
-        Es = [set_noisy_energy!(s2, E, σE)[end] for _ in 1:1000]
+        Es = [get_noisy_energy(E, σE) for _ in 1:1000]
 
         @test E - σE < mean(Es) < E + σE
         @test 0.9 * σE < std(Es) < 1.1 * σE

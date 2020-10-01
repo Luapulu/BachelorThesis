@@ -160,10 +160,7 @@ function apply_electronics(pulse; GBP = 150e+06, Cd = 3.5e-12, Ts = 1e-9, tau = 
     filtered = filt(myfilter, vcat([0], diff(pulse)))
 end
 
-function set_noisy_energy!(signal, E, σE)
-    signal .*= rand(Normal(E, σE)) / signal[end]
-    return signal
-end
+get_noisy_energy(E, σE) = rand(Normal(E, σE))
 
 
 function addnoise!(signal, noise, noise_index=rand(1:length(noise)))
