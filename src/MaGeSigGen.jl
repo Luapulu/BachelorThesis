@@ -16,7 +16,7 @@ export SignalDict, signals, get_signal, get_signal!, get_signals, get_signals!, 
 
 # Signal processing
 export getA, drift_time, charge_cloud_size, getδτ, apply_group_effects, set_noisy_energy!,
-    addnoise!, appendrawAoEhist!, apply_electronics
+    moving_average, moving_average!, addnoise!, appendrawAoEhist!, apply_electronics
 
 
 include("setup.jl")
