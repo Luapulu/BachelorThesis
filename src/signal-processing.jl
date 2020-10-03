@@ -27,8 +27,9 @@ Parameters A and B were obtained from MC of BSI inv-coax (evolution of R90, resc
 """
 charge_cloud_size(energy) = max(-0.03499440089585633 + 0.0003359462486002238 * energy, 0.01)
 
-function getδτ(stp::SigGenSetup, firstloc)
-    get_signal!(stp, firstloc)
+function getδτ(stp::SigGenSetup, loc)
+	outside_detector(stp, loc) && return nothing
+    get_signal!(stp, loc)
     return stp.final_charge_size / stp.final_vel
 end
 
