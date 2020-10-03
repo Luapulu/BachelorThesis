@@ -1,20 +1,34 @@
-using MaGeSigGen, MaGe, MJDSigGen
-using MJDSigGen: outside_detector
+using Distributed
+worker_num = 16
+nprocs() <= worker_num && addprocs(1 + worker_num - nprocs())
 
-dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-23-siggen2"))
+@everywhere begin
+    import Pkg
+    Pkg.activate(".")
+    Pkg.instantiate()
+end
+
+@everywhere begin
+    using MaGeSigGen, MaGe, MJDSigGen, JLD
+    using MJDSigGen: outside_detector
+end
+
+signaldir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-23-siggen2", "signals"))
 
 event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
 event_paths = filter(p -> occursin(r".root.hits$", p), readdir(event_dir, join=true))
 signal_paths = map(
-    p -> joinpath(dir, "signals", split(splitdir(p)[end], '.')[1] * "_signals.jld"),
+    p -> joinpath(signaldir, split(splitdir(p)[end], '.')[1] * "_signals.jld"),
     event_paths
 )
 
-cd(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-30-group-effects"))
+@everywhere begin
+    const dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-30-group-effects"))
+    cd(dir)
+    const setup = MJDSigGen.signal_calc_init("GWD6022_01ns.config")
+end
 
-const setup = MJDSigGen.signal_calc_init("GWD6022_01ns.config")
-
-elect_params_GWD6022 = (
+@everywhere elect_params_GWD6022 = (
     GBP = 150e+06,
     Cd  = 3.5e-12,
     tau = 65e-06,
@@ -23,9 +37,9 @@ elect_params_GWD6022 = (
     Kv  = 5e+05
 )
 
-getσE(E) = sqrt(0.244593 + 0.00211413 * E) / (2 * √(2 * log(2)))
+@everywhere getσE(E) = sqrt(0.244593 + 0.00211413 * E) / (2 * √(2 * log(2)))
 
-function getEandAweffs(event, signal, setup, elect_params, ns)
+@everywhere function getEandAweffs(event, signal, setup, elect_params, ns)
     E = energy(event)
 
     loc = location(first(hits(event)))
@@ -44,7 +58,7 @@ function getEandAweffs(event, signal, setup, elect_params, ns)
     return get_noisy_energy(E, getσE(E)), getA(s)
 end
 
-function map_events_signals(f::Function, event_path::AbstractString, signal_path::AbstractString, setup, args...)
+@everywhere function map_events_signals(f::Function, event_path::AbstractString, signal_path::AbstractString, setup, args...)
     sgnls = load_signals(SignalDict, signal_path)
     return hcat(collect(
         (todetcoords!(event, setup); collect(f(event, sgnls[event], setup, args...)))
@@ -52,10 +66,8 @@ function map_events_signals(f::Function, event_path::AbstractString, signal_path
     )...)
 end
 
-function map_events_signals(f::Function, event_paths::Vector{<:AbstractString}, signal_paths::Vector{<:AbstractString}, setup, args...)
-    return hcat(map(zip(event_paths, signal_paths)) do (epath, spath)
-        map_events_signals(f, epath, spath, setup, args...)
-    end...)
+pmap(zip(event_paths, signal_paths)) do (epath, spath)
+    EAarr = map_events_signals(getEandAweffs, epath, spath, setup, elect_params_GWD6022, 100)
+    savepath = joinpath(dir, "EsAs", split(splitdir(epath)[end], '.')[1] * "EsAs.jld")
+    save(savepath, "EsAs", EAarr)
 end
-
-@time map_events_signals(getEandAweffs, event_paths[1:5], signal_paths[1:5], setup, elect_params_GWD6022, 100)
