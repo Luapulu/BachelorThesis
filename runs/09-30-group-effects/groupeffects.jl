@@ -10,6 +10,8 @@ signal_paths = map(
     event_paths
 )
 
+cd(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-30-group-effects"))
+
 const setup = MJDSigGen.signal_calc_init("GWD6022_01ns.config")
 
 elect_params_GWD6022 = (
