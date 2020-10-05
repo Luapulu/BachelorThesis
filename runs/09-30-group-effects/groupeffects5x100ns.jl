@@ -11,6 +11,7 @@ end
 @everywhere begin
     using MaGeSigGen, MaGe, MJDSigGen, JLD
     using MJDSigGen: outside_detector
+    using DelimitedFiles, Interpolations
 end
 
 signaldir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-23-siggen2", "signals"))
