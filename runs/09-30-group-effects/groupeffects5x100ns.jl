@@ -64,11 +64,14 @@ end
     end
 
     s = apply_group_effects(signal, δτ, setup.step_time_out, true)
-    s = apply_electronics(s; elect_params_GWD6022...)
-    s = addnoise!(s, cryo_noise_linear)
-    s = moving_average(s, 100, 5)
 
-    s .*= E ./ maximum(s)
+    s = apply_electronics(s; elect_params_GWD6022...)
+    
+    s .*= E / maximum(s)
+
+    s = addnoise!(s, cryo_noise_linear)
+
+    s = moving_average(s, 100, 5)
 
     return get_noisy_energy(E, getσE(E)), getA(s)
 end
