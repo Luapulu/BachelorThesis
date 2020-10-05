@@ -28,7 +28,7 @@ signal_paths = map(
     const setup = MJDSigGen.signal_calc_init("GWD6022_01ns.config")
 end
 
-@everywhere elect_params_GWD6022 = (
+@everywhere const elect_params_GWD6022 = (
     GBP = 150e+06,
     Cd  = 3.5e-12,
     tau = 65e-06,
@@ -37,9 +37,22 @@ end
     Kv  = 5e+05
 )
 
+@everywhere begin
+    raw = vec(readdlm("/mnt/geda00/comellato/pss/unisexMacros/noiseArrayDEP100MHz.dat"))
+
+    # periodic boundary conditions
+    push!(raw, raw[1])
+
+    # un-normalize
+    raw .*= 1592.5
+
+    linearitp = interpolate(raw, BSpline(Linear()))
+    const cryo_noise_linear = map(linearitp, 1:0.1:length(raw) - 0.1)
+end
+
 @everywhere getσE(E) = sqrt(0.244593 + 0.00211413 * E) / (2 * √(2 * log(2)))
 
-@everywhere function getEandAweffs(event, signal, setup, elect_params, ns)
+@everywhere function getEandAweffs(event, signal, setup)
     E = energy(event)
 
     loc = location(first(hits(event)))
@@ -50,8 +63,9 @@ end
     end
 
     s = apply_group_effects(signal, δτ, setup.step_time_out, true)
-    s = apply_electronics(s; elect_params...)
-    s = moving_average(s, ns, 5)
+    s = apply_electronics(s; elect_params_GWD6022...)
+    s = addnoise!(s, cryo_noise_linear)
+    s = moving_average(s, 100, 5)
 
     s .*= E ./ maximum(s)
 
@@ -67,7 +81,7 @@ end
 end
 
 EsAs = pmap(zip(event_paths, signal_paths)) do (epath, spath)
-    EAarr = map_events_signals(getEandAweffs, epath, spath, setup, elect_params_GWD6022, 100)
+    return map_events_signals(getEandAweffs, epath, spath, setup)
 end
 
 savepath = joinpath(dir, "EsAs5x100ns.jld")
