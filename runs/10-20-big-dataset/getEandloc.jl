@@ -1,6 +1,6 @@
 using MaGeSigGen, MJDSigGen, MaGe, Statistics
 
-const dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-24-big-siggen2"))
+const dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "10-20-big-dataset"))
 const event_dir = "/lfs/l3/gerda/ga53sog/Montecarlo/results/GWD6022_Co56_side50cm/DM/"
 
 isdir(joinpath(dir, "tier2")) || mkdir(joinpath(dir, "tier2"))
@@ -26,12 +26,6 @@ end
 
 const event_paths = sort(filter(p -> occursin(r".root.hits$", p), readdir(event_dir)))
 
-@everywhere getcentreE(event)
-    xE = mean(map(h -> h.x * h.E, hits(event)))
-    yE = map(h -> h.y* h.E, hits(event))
-    zE = map(h -> h.z * h.E, hits(event))
-    return
-
 function getEandlocs(filenum)
     path = joinpath(event_dir, event_paths[filenum])
     @info "Working on $(splitdir(path)[end])"
@@ -52,7 +46,7 @@ function getEandlocs(filenum)
 
     yEs = map(e -> mean(map(h -> h.y * h.E, hits(e))), events)
     save(save_path, "yEs", yEs)
-    
+
     zEs = map(e -> mean(map(h -> h.z * h.E, hits(e))), events)
     save(save_path, "zEs", zEs)
 
