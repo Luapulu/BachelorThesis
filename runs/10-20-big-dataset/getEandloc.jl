@@ -33,25 +33,15 @@ function getEandlocs(filenum)
     filtered_events = Iterators.filter(event_filter, MaGe.loadstreaming(path))
     events = [todetcoords!(e, setup) for e in filtered_events]
 
-    save_path = joinpath(dir, "tier2", split(splitdir(path)[end], '.')[1] * "_tier2.jld")
-
     Es = map(energy, events)
-    save(save_path, "Es", Es)
-
     locs = vcat(map(e -> location(first(hits(e))), events)...)
-    save(save_path, "locs", locs)
-
     xEs = map(e -> mean(map(h -> h.x * h.E, hits(e))), events)
-    save(save_path, "xEs", xEs)
-
     yEs = map(e -> mean(map(h -> h.y * h.E, hits(e))), events)
-    save(save_path, "yEs", yEs)
-
     zEs = map(e -> mean(map(h -> h.z * h.E, hits(e))), events)
-    save(save_path, "zEs", zEs)
-
     enums = map(eventnum, events)
-    save(save_path, "enums", enums)
+
+    save_path = joinpath(dir, "tier2", split(splitdir(path)[end], '.')[1] * "_tier2.jld")
+    save(save_path, "Es", Es, "locs", locs, "xEs", xEs, "yEs", yEs, "zEs", zEs, "enums", enums)
 
     @info "Saved tier2 data to $(splitdir(save_path)[end])"
 
