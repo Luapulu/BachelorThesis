@@ -53,22 +53,14 @@ end
     return getA(s)
 end
 
+As, Es, enums = pmap(signal_paths) do signal_path
+    sgnls = load_signals(SignalDict, signal_path)
+    return (
+        map(getAnoeffects, signals(sgnls))
+        map(s -> get_noisy_energy(maximum(s), getσE(maximum(s))), sgnls)
+        keys(sgnls)
+    )
+end
+
 savepath = "EsAs-no-group-effects.jld"
-
-As = pmap(signal_paths) do signal_path
-    map(getAnoeffects, signals(load_signals(SignalDict, signal_path)))
-end
-
-save(savepath, "As", vcat(As...))
-
-Es = pmap(signal_paths) do signal_path
-    map(s -> get_noisy_energy(maximum(s), getσE(maximum(s))), signals(load_signals(SignalDict, signal_path)))
-end
-
-save(savepath, "Es", vcat(Es...))
-
-enums = pmap(signal_paths) do signal_path
-    keys(load_signals(SignalDict, signal_path))
-end
-
-save(savepath, "enums", vcat(enums...))
+save(savepath, "As", vcat(As...), "Es", vcat(Es...), "enums", vcat(enums...))
