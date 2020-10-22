@@ -56,8 +56,8 @@ end
 As, Es, enums = pmap(signal_paths) do signal_path
     sgnls = load_signals(SignalDict, signal_path)
     return (
-        map(getAnoeffects, signals(sgnls))
-        map(s -> get_noisy_energy(maximum(s), getσE(maximum(s))), sgnls)
+        map(getAnoeffects, signals(sgnls)),
+        map(s -> get_noisy_energy(maximum(s), getσE(maximum(s))), sgnls),
         keys(sgnls)
     )
 end
