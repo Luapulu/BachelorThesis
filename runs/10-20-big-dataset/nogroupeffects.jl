@@ -1,5 +1,5 @@
 using Distributed
-worker_num = 16
+worker_num = 8
 nprocs() <= worker_num && addprocs(1 + worker_num - nprocs())
 
 @everywhere begin
@@ -39,7 +39,7 @@ end
 
 @everywhere getσE(E) = sqrt(0.244593 + 0.00211413 * E) / (2 * √(2 * log(2)))
 
-@everywhere function getEandA(signal)
+@everywhere function getAnoeffects(signal)
     E = maximum(signal)
 
     s = apply_electronics(signal; elect_params_GWD6022...)
@@ -50,12 +50,19 @@ end
 
     s = moving_average(s, 100, 5)
 
-    return get_noisy_energy(E, getσE(E)), getA(s)
-end
-
-EsAs = pmap(signal_paths) do signal_path
-    vcat(map(s -> hcat(getEandA(s)...), signals(load_signals(SignalDict, signal_path)))...)
+    return getA(s)
 end
 
 savepath = joinpath(dir, "EsAs-no-group-effects.jld")
-save(savepath, "EsAs", vcat(EsAs...))
+
+As = pmap(signal_paths) do signal_path
+    map(getAnoeffects, signals(load_signals(SignalDict, signal_path)))
+end
+
+save(savepath, "As", vcat(As...))
+
+Es = pmap(signal_paths) do signal_path
+    map(s -> get_noisy_energy(maximum(s), getσE(maximum(s))), signals(load_signals(SignalDict, signal_path)))
+end
+
+save(savepath, "Es", vcat(Es...))
