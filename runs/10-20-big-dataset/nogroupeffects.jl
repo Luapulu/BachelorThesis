@@ -53,7 +53,7 @@ end
     return getA(s)
 end
 
-savepath = joinpath(dir, "EsAs-no-group-effects.jld")
+savepath = "EsAs-no-group-effects.jld"
 
 As = pmap(signal_paths) do signal_path
     map(getAnoeffects, signals(load_signals(SignalDict, signal_path)))
