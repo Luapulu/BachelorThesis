@@ -1,5 +1,5 @@
 using Distributed
-worker_num = 8
+worker_num = 4
 nprocs() <= worker_num && addprocs(1 + worker_num - nprocs())
 
 @everywhere begin
@@ -66,3 +66,9 @@ Es = pmap(signal_paths) do signal_path
 end
 
 save(savepath, "Es", vcat(Es...))
+
+enums = pmap(signal_paths) do signal_path
+    keys(load_signals(SignalDict, signal_path))
+end
+
+save(savepath, "enums", vcat(enums...))
