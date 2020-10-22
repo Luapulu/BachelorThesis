@@ -42,7 +42,7 @@ end
 @everywhere function getEandA(signal)
     E = maximum(signal)
 
-    s = apply_electronics(s; elect_params_GWD6022...)
+    s = apply_electronics(signal; elect_params_GWD6022...)
 
     s .*= E / maximum(s)
 
