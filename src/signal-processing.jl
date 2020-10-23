@@ -27,8 +27,8 @@ Parameters A and B were obtained from MC of BSI inv-coax (evolution of R90, resc
 """
 charge_cloud_size(energy) = max(-0.03499440089585633 + 0.0003359462486002238 * energy, 0.01)
 
-function getδτ(stp::SigGenSetup, firstloc)
-    get_signal!(stp, firstloc)
+function getδτ(stp::SigGenSetup, loc)
+    get_signal!(stp, loc)
     return stp.final_charge_size / stp.final_vel
 end
 
@@ -160,10 +160,7 @@ function apply_electronics(pulse; GBP = 150e+06, Cd = 3.5e-12, Ts = 1e-9, tau = 
     filtered = filt(myfilter, vcat([0], diff(pulse)))
 end
 
-function set_noisy_energy!(signal, E, σE)
-    signal .*= rand(Normal(E, σE)) / signal[end]
-    return signal
-end
+get_noisy_energy(E, σE) = rand(Normal(E, σE))
 
 
 function addnoise!(signal, noise, noise_index=rand(1:length(noise)))

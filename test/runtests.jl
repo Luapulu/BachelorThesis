@@ -144,19 +144,18 @@ end
 
         E = 1234.5
         σE = 67.8
-        s2 = copy(s)
-        Es = [set_noisy_energy!(s2, E, σE)[end] for _ in 1:1000]
+        Es = [get_noisy_energy(E, σE) for _ in 1:1000]
 
         @test E - σE < mean(Es) < E + σE
         @test 0.9 * σE < std(Es) < 1.1 * σE
 
-        smooth1 = MaGeSigGen.moving_average(s, 4)
+        smooth1 = moving_average(s, 4)
         @test isapprox(smooth1, [0.55, 0.55, 1.0, 1.45, 1.8, 1.95, 1.95, 1.95], rtol=1e-6)
 
-        smooth2 = MaGeSigGen.moving_average(s, 2)
-        smooth2 = MaGeSigGen.moving_average(smooth2, 2)
-        smooth2 = MaGeSigGen.moving_average(smooth2, 2)
-        @test isapprox(MaGeSigGen.moving_average(s, 2, 3), smooth2, rtol=1e-6)
+        smooth2 = moving_average(s, 2)
+        smooth2 = moving_average(smooth2, 2)
+        smooth2 = moving_average(smooth2, 2)
+        @test isapprox(moving_average(s, 2, 3), smooth2, rtol=1e-6)
 
         s3 = copy(s)
         noisy_signal = Float32[

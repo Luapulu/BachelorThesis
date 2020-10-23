@@ -59,10 +59,12 @@ signals(S::SignalDict) = values(S.signals)
 
 function save(path::AbstractString, S::SignalDict)
     mat = Matrix{Float32}(undef, length(first(S)), length(S))
-    for (i, s) in enumerate(signals(S))
+    ks = Vector{Int}(undef, length(S))
+    for (i, (k, s)) in enumerate(pairs(S))
         mat[:, i] .= s
+        ks[i] = k
     end
-    save(path, "signals", (collect(keys(S)), mat))
+    save(path, "signals", (ks, mat))
 end
 
 function load_signals(S::Type{SignalDict}, path::AbstractString)
