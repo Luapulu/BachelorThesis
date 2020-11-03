@@ -10,7 +10,7 @@ noise_path = "/mnt/geda00/comellato/pss/unisexMacros/noiseArrayDEP100MHz.dat"
 
 const event_paths = map(
     p -> joinpath(event_dir, p),
-    filter(p -> occursin(r".root.hits$", p), readdir(event_dir)
+    filter(p -> occursin(r".root.hits$", p), readdir(event_dir))
 )
 
 const signal_paths = map(
