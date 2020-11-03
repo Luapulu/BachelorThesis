@@ -5,7 +5,7 @@ using DelimitedFiles, Interpolations
 ## Paths
 
 event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
-signal_dir = "/mnt/e15/comellato/results4Paul_hd/"
+signal_dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-23-siggen2", "signals"))
 noise_path = "/mnt/geda00/comellato/pss/unisexMacros/noiseArrayDEP100MHz.dat"
 
 const event_paths = map(
@@ -164,7 +164,7 @@ function get_tier2(i::Integer)
         "yE", yE,
         "zE", zE
     )
-    @info "saved to $path", i
+    @info "saved to $path" i
     nothing
 end
 
