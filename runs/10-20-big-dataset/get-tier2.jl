@@ -151,7 +151,7 @@ function get_tier2(i::Integer)
 
     path = "tier2/tier2_$i.jld"
     save(path,
-        "eventnum", eventnum,
+        "evntnum", evntnum,
         "E", E,
         "A", A,
         "RT", RT,
