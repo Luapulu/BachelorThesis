@@ -1,6 +1,7 @@
 using MaGeSigGen, MaGe, MJDSigGen, JLD
 using MJDSigGen: outside_detector
 using DelimitedFiles, Interpolations
+using Statistics
 
 ## Paths
 
