@@ -5,9 +5,9 @@ using Statistics
 
 ## Paths
 
-event_dir = "/mnt/e15/comellato/results4Paul/GWD6022_Co56_side50cm/DM"
-signal_dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-23-siggen2", "signals"))
-noise_path = "/mnt/geda00/comellato/pss/unisexMacros/noiseArrayDEP100MHz.dat"
+event_dir = "/lfs/l3/gerda/ga53sog/Montecarlo/results/GWD6022_Co56_side50cm/DM/"
+signal_dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-24-big-siggen2", "signals"))
+noise_path = realpath(joinpath(dirname(pathof(MaGeSigGen)), "../unisexMacros/noiseArrayDEP100MHz.dat"))
 
 const event_paths = map(
     p -> joinpath(event_dir, p),
