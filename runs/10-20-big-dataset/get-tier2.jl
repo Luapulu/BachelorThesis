@@ -1,7 +1,6 @@
 using MaGeSigGen, MaGe, MJDSigGen, JLD
 using MJDSigGen: outside_detector
 using DelimitedFiles, Interpolations
-using Statistics
 
 ## Paths
 
@@ -145,9 +144,9 @@ function get_tier2(i::Integer)
         push!(y, firsthit.y)
         push!(z, firsthit.z)
 
-        push!(xE, mean(h -> h.x * h.E, event))
-        push!(yE, mean(h -> h.y * h.E, event))
-        push!(zE, mean(h -> h.z * h.E, event))
+        push!(xE, sum(h -> h.x * h.E, event) / energy(event))
+        push!(yE, sum(h -> h.y * h.E, event) / energy(event))
+        push!(zE, sum(h -> h.z * h.E, event) / energy(event))
     end
 
     path = "tier2/tier2_$i.jld"
