@@ -110,8 +110,8 @@ function get_tier2(i::Integer)
     E   = Float64[]
     A   = Float64[]
     RT  = Float64[]
-    gA  = Float64[]
-    gRT = Float64[]
+    gA  = Union{Missing, Float64}[]
+    gRT = Union{Missing, Float64}[]
     x   = Float64[]
     y   = Float64[]
     z   = Float64[]
@@ -136,8 +136,13 @@ function get_tier2(i::Integer)
         push!(RT, ng.RT)
 
         wg = get_tier2_with_group_effects(event, signal)
-        push!(gA, wg.A)
-        push!(gRT, wg.RT)
+        if ismissing(wg)
+            push!(gA, missing)
+            push!(gRT, missing)
+        else
+            push!(gA, wg.A)
+            push!(gRT, wg.RT)
+        end
 
         firsthit = first(hits(event))
         push!(x, firsthit.x)
