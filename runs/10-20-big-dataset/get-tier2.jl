@@ -6,7 +6,7 @@ using DelimitedFiles, Interpolations
 
 event_dir = "/lfs/l3/gerda/ga53sog/Montecarlo/results/GWD6022_Co56_side50cm/DM/"
 signal_dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "09-24-big-siggen2", "signals"))
-noise_path = realpath(joinpath(dirname(pathof(MaGeSigGen)), "../unisexMacros/noiseArrayDEP100MHz.dat"))
+noise_path = realpath(joinpath(dirname(pathof(MaGeSigGen)), "../../unisexMacros/noiseArrayDEP100MHz.dat"))
 
 const event_paths = map(
     p -> joinpath(event_dir, p),
