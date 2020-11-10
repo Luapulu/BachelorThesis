@@ -21,7 +21,7 @@ const signal_paths = map(
 const dir = realpath(joinpath(dirname(pathof(MaGeSigGen)), "..", "runs", "10-20-big-dataset"))
 cd(dir)
 
-!isdir("tier2") && mkdir("tier2")
+!isdir("main-tier2") && mkdir("main-tier2")
 
 ## Detector Setup
 
@@ -154,7 +154,7 @@ function get_tier2(i::Integer)
         push!(zE, sum(h -> h.z * h.E, event) / energy(event))
     end
 
-    path = "tier2/tier2_$i.jld"
+    path = "main-tier2/main-tier2_$i.jld"
     save(path,
         "evntnum", evntnum,
         "E", E,
