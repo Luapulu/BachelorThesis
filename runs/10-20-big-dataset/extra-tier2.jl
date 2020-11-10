@@ -154,7 +154,7 @@ function get_tier2(i::Integer)
         push!(zE, sum(h -> h.z * h.E, event) / energy(event))
     end
 
-    path = "tier2/tier2_$i.jld"
+    path = "extra-tier2/extra-tier2_$i.jld"
     save(path,
         "evntnum", evntnum,
         "E", E,
