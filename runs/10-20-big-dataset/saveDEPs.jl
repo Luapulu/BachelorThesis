@@ -11,8 +11,8 @@ end
 @everywhere using JLD
 
 
-const tier2files = filter(p -> occursin(r"tier2_", p), readdir("/mnt/e15/comellato/results4Paul_hd/main-tier2", join=true))
-const extrafiles = filter(p -> occursin(r"tier2_", p), readdir("/mnt/e15/comellato/results4Paul_hd/extra-tier2", join=true))
+const tier2files = filter(p -> occursin(r"tier2_", p), readdir("/mnt/e15/comellato/results4Paul_hd/main-tier2", join=true))[1:6000]
+const extrafiles = filter(p -> occursin(r"tier2_", p), readdir("/mnt/e15/comellato/results4Paul_hd/extra-tier2", join=true))[1:6000]
 
 @everywhere const dep_regions = [1577, 1988, 2180, 2232, 2251, 2429]
 
