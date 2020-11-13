@@ -13,7 +13,7 @@ end
 
 const tier2files = filter(p -> occursin(r"tier2_", p), readdir("/mnt/e15/comellato/results4Paul_hd/main-tier2", join=true))
 
-const dep_regions = [1577, 1988, 2180, 2232, 2251, 2429]
+@everywhere const dep_regions = [1577, 1988, 2180, 2232, 2251, 2429]
 
 function get_DEP_data(paths, dep_regions, grouped)
     Apath = (grouped ? "gA" : "A")
