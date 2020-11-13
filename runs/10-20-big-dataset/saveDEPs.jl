@@ -69,11 +69,11 @@ function concatDEPs(data)
 end
 
 dep_group = pmap(f -> get_DEP_data(f, dep_regions, true), tier2files)
-group_extra = pmap(f -> get_DEP_extra(f, dep_regions, true), tier2files)
+group_extra = pmap(f -> get_DEP_extra(f, dep_regions, true), extrafiles)
 
 save("dep_group_full.jld", "dep_data", concatDEPs(vcat(dep_group, group_extra)))
 
 dep_nogroup = pmap(f -> get_DEP_data(f, dep_regions, false), tier2files)
-nogroup_extra = pmap(f -> get_DEP_extra(f, dep_regions, false), tier2files)
+nogroup_extra = pmap(f -> get_DEP_extra(f, dep_regions, false), extrafiles)
 
 save("dep_nogroup_full.jld", "dep_data", concatDEPs(vcat(dep_nogroup, nogroup_extra)))
