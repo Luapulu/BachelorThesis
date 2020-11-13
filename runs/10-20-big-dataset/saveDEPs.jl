@@ -4,7 +4,7 @@ nprocs() <= worker_num && addprocs(1 + worker_num - nprocs())
 
 @everywhere begin
     import Pkg
-    Pkg.activate(".")
+    Pkg.activate("../../")
     Pkg.instantiate()
 end
 
