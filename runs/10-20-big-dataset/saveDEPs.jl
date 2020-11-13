@@ -15,21 +15,18 @@ const tier2files = filter(p -> occursin(r"tier2_", p), readdir("/mnt/e15/comella
 
 @everywhere const dep_regions = [1577, 1988, 2180, 2232, 2251, 2429]
 
-@everywhere function get_DEP_data(paths, dep_regions, grouped)
+@everywhere function get_DEP_data(path, dep_regions, grouped)
     Apath = (grouped ? "gA" : "A")
     data = collect((Float64[], Float64[]) for _ in dep_regions)
     num = 0
-    for p in paths
-        jldopen(p) do f
-            (num += 1) % 100 == 0 && @info p num
-            for (E::Float64, A::Union{Missing, Float64}) in zip(read(f["E"]), read(f[Apath]))
-                if !ismissing(A) && !isnan(A::Float64)
-                    i = findfirst(r -> r - 10 <= E < r + 10, dep_regions)
-                    if !isnothing(i)
-                        Earr, AoEarr = data[i]
-                        push!(Earr, E)
-                        push!(AoEarr, (A / E))
-                    end
+    jldopen(path) do f
+        for (E::Float64, A::Union{Missing, Float64}) in zip(read(f["E"]), read(f[Apath]))
+            if !ismissing(A) && !isnan(A::Float64)
+                i = findfirst(r -> r - 10 <= E < r + 10, dep_regions)
+                if !isnothing(i)
+                    Earr, AoEarr = data[i]
+                    push!(Earr, E)
+                    push!(AoEarr, (A / E))
                 end
             end
         end
